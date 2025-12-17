@@ -61,7 +61,7 @@
 
 Проверим статус службы:
 
-![img](img/image14.png)
+![img](img/image4.png)
 
 ## Задание 3
 
