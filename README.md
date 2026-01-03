@@ -164,3 +164,67 @@
 Перейдём в Kibana и увидим логи Nginx:
 
 ![img](img/image31.png)
+
+
+## Задание 4
+
+**Filebeat**
+
+Установите и запустите Filebeat. Переключите поставку логов Nginx с Logstash на Filebeat.
+
+*Приведите скриншот интерфейса Kibana, на котором видны логи Nginx, которые были отправлены через Filebeat.*
+
+
+## Решение 4
+
+Для выполнения задания выполним следующие действия.
+
+Установим Filebeat:
+
+![img](img/image32.png)
+
+![img](img/image33.png)
+
+Настроим Filebeat для работы с логами Nginx.
+Filebeat поставляется с готовыми модулями. Включим мсодуль для Nginx выполнив команду:
+
+![img](img/image34.png)
+
+После выполнения команды создастся конфигурационный файл */etc/filebeat/modules.d/nginx.yml*.
+Проверим конфигурационный файл:
+
+![img](img/image35.png)
+
+В файле включим access-логи:
+
+![img](img/image36.png)
+
+Теперь в основном конфигурационном файле настроим подключение к Elasticsearch:
+
+![img](img/image37.png)
+
+![img](img/image38.png)
+
+Загрузим шаблоны и dashboards:
+
+![img](img/image39.png)
+
+Остановим Logstash:
+
+![img](img/image40.png)
+
+Запустим Filebeat:
+
+![img](img/image41.png)
+
+Проверим статус службы Filebeat:
+
+![img](img/image42.png)
+
+Сделаем несколько запросов к Nginx:
+
+![img](img/image43.png)
+
+Перейдём в Kibana для просмотра логов от поставщика Filebeat:
+
+![img](img/image44.png)
