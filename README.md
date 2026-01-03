@@ -39,3 +39,18 @@
 
 ![img](img/image6.png)
 
+Запустим Elastic и включим его автозапуск:
+
+![img](img/image7.png)
+
+Для изменения параметра cluster_name выполним следующие действия.
+
+Остановим службу Elasticsearch:
+
+![img](img/image8.png)
+
+Откроем конфигурационный файл для редактирования:
+
+![img](img/image9.png)
+
+
