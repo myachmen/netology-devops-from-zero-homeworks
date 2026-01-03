@@ -37,5 +37,5 @@
 
 ![img](img/image5.png)
 
-![img](img/image5.png)
+![img](img/image6.png)
 
