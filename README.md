@@ -53,4 +53,6 @@
 
 ![img](img/image9.png)
 
+Найдём, раскомментируем и изменим строку *cluster.name: hw-elk* :
 
+![img](img/image10.png)
