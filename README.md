@@ -115,7 +115,7 @@ pg_dump -U username -h localhost -F c -b -v -f backup_file.dump my_database
 
 **-f** backup_file.dump — путь и имя файла резервной копии;
 
-**my_database** — имя резервируемой базы данных
+**my_database** — имя резервируемой базы данных.
 
 
 
