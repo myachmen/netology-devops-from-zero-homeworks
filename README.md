@@ -146,6 +146,6 @@
 
 5) Блок-схема
 
-![img](img/image24.png)
+![img](img/image1.png)
 
 
