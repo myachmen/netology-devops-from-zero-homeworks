@@ -37,10 +37,118 @@
 
 Для выполнения задания выполним следующие действия.
 
-Установим Vagrant на свой компьютер:
+Установим Docker:
 
 ![img](img/image1.png)
 
+![img](img/image2.png)
+
+Включим и запустим сервис:
+
+![img](img/image3.png)
+
+Установим контейнер с MySQL:
+
+![img](img/image4.png)
+
+![img](img/image5.png)
+
+Проверим, что контейнер поднялся:
+
+![img](img/image6.png)
+
+Подключимся внутрь контейнера:
+
+![img](img/image7.png)
+
+Создадим учётную запись sys_temp (в MySQL консоли):
+
+![img](img/image8.png)
+
+Получим список пользователей:
+
+![img](img/image9.png)
+
+Выдадим все права учётной записи sys_temp:
+
+![img](img/image10.png)
+
+Выведем права пользователя sys_temp:
+
+![img](img/image11.png)
+
+Переподключимся к базе от имени учётной записи sys_temp.
+Сначала сменим тип аутентификации:
+
+![img](img/image12.png)
+
+Переподключимся от имени sys_temp:
+
+![img](img/image13.png)
+
+Скачаем и распакуем дамп базы данных:
+
+![img](img/image14.png)
+
+![img](img/image15.png)
+
+Скопируем SQL-файлы в контейнер:
+
+![img](img/image16.png)
+
+Создадим БД:
+
+![img](img/image17.png)
+
+Импортируем схему и данные:
+
+![img](img/image18.png)
+
+Выведем список таблиц:
+
+![img](img/image19.png)
+
+Выведем количество записей в двух произвольных таблицах:
+
+![img](img/image20.png)
+
+Полный список всех SQL-запросов, применяемых при выполнении задания:
+
+```
+-- 1) Создать пользователя
+
+CREATE USER 'sys_temp'@'%' IDENTIFIED BY 'TempPass123!';
+
+-- 2) Вывести список пользователей 
+
+SELECT user, host, plugin
+FROM mysql.user
+ORDER BY user, host;
+
+-- 3) Дать все права пользователю sys_temp
+
+GRANT ALL PRIVILEGES ON *.* TO 'sys_temp'@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+
+-- 4) Показать права пользователя sys_temp
+
+SHOW GRANTS FOR 'sys_temp'@'%';
+
+-- 5) Смена типа аутентификации
+
+ALTER USER 'sys_temp'@'%' IDENTIFIED WITH mysql_native_password BY 'TempPass123!';
+FLUSH PRIVILEGES;
+
+-- 6) Создать БД
+
+CREATE DATABASE sakila;
+
+-- 7) Проверка таблиц
+
+USE sakila;
+SHOW TABLES;
+
+```
 
 ## Задание 2
 
@@ -55,11 +163,15 @@ customer         | customer_id
 
 ## Решение 2
 
-Для выполнения задания подготовим локальный репозиторий.
-Для этого в консоли выполним команды:
+Для выполнения задания выполним следующие действия.
 
-![img](img/image1.png)
+Подключимся к базе:
 
+![img](img/image21.png)
 
+Выполним запрос:
 
+![img](img/image22.png)
+
+Перенесём данные в ![excel-файл](Sakila table primary key.xlsx)
 
