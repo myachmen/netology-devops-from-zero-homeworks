@@ -173,5 +173,5 @@ customer         | customer_id
 
 ![img](img/image22.png)
 
-Перенесём данные в ![excel-файл](Sakila table primary key.xlsx)
+Перенесём данные в [excel-файл](Sakila table primary key.xlsx)
 
