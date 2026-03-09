@@ -1,16 +1,31 @@
 
-# Домашнее задание по теме "GitLab" Ячмень Марк Викторович
+# Домашнее задание по теме "Защита сети" Ячмень Марк Викторович
 
+## Подготовка к выполнению заданий
+ 1. Подготовка защищаемой системы:
+	- установите Suricata,
+	- установите Fail2Ban.
 
+ 2. Подготовка системы злоумышленника: установите nmap и thc-hydra либо скачайте и установите Kali linux.
+
+Обе системы должны находится в одной подсети.
 
 
 ## Задание 1
 
-1. Разверните GitLab локально, используя Vagrantfile и инструкцию, описанные в этом репозитории.
-2. Создайте новый проект и пустой репозиторий в нём.
-3. Зарегистрируйте gitlab-runner для этого проекта и запустите его в режиме Docker. Раннер можно регистрировать и запускать на той же виртуальной машине, на которой запущен GitLab.
+Проведите разведку системы и определите, какие сетевые службы запущены на защищаемой системе:
 
-В качестве ответа в репозиторий шаблона с решением добавьте скриншоты с настройками раннера в проекте.
+sudo nmap -sA < ip-адрес >
+
+sudo nmap -sT < ip-адрес >
+
+sudo nmap -sS < ip-адрес >
+
+sudo nmap -sV < ip-адрес >
+
+По желанию можете поэкспериментировать с опциями: https://nmap.org/man/ru/man-briefoptions.html.
+
+*В качестве ответа пришлите события, которые попали в логи Suricata и Fail2Ban, прокомментируйте результат.*
 
 
 
@@ -18,78 +33,128 @@
 
 Для выполнения задания выполним следующие действия.
 
-Установим Vagrant на свой компьютер:
+С помощью Vagrant создадим две виртуальных машины: защищаемую(defender) и атакующую(attacker).
+Для этого создадим папку проекта и внутри неё файл Vagrantfile со следующим содержимым:
+
+```
+Vagrant.configure("2") do |config|
+
+  config.vm.box = "ubuntu/jammy64"
+
+  # Defender
+  config.vm.define "defender" do |defender|
+    defender.vm.hostname = "defender"
+    defender.vm.network "private_network", ip: "192.168.56.10"
+
+    defender.vm.provider "virtualbox" do |vb|
+      vb.memory = 2048
+      vb.cpus = 2
+    end
+
+    defender.vm.provision "shell", inline: <<-SHELL
+      apt update
+      apt install -y suricata fail2ban openssh-server
+      systemctl enable suricata
+      systemctl start suricata
+      systemctl enable fail2ban
+      systemctl start fail2ban
+    SHELL
+  end
+
+  # Attacker
+  config.vm.define "attacker" do |attacker|
+    attacker.vm.hostname = "attacker"
+    attacker.vm.network "private_network", ip: "192.168.56.11"
+
+    attacker.vm.provider "virtualbox" do |vb|
+      vb.memory = 1024
+    end
+
+    attacker.vm.provision "shell", inline: <<-SHELL
+      apt update
+      apt install -y nmap hydra
+    SHELL
+  end
+
+end
+```
+После этого перейдём в консоли PowerShell перейдём в папку проекта и выполним команду:
 
 ![img](img/image1.png)
 
+После окончания выполнения команды в VirtualBox появятся две виртуальных машины:
+
 ![img](img/image2.png)
 
-Склонируем репозиторий с домашним заданием с GitHub себе на компьютер:
+Подключимся к атакующей машине и начнём выполнение команд.
 
-![img](img/image3.png)
-
-Отредактируем файл hosts у себя на компьютере. Добавим в него строку *192.168.56.10 gitlab.localdomain gitlab*:
+Выполним команду ```sudo nmap -sA 192.168.56.10```
 
 ![img](img/image4.png)
 
-Эта информация взята из Vagrantfile:
+Полученный вывод 
+
+```All 1000 scanned ports on 192.168.56.10 are unfiltered```
+
+означает, что ACK-скан используется для проверки фильтрации firewall:
+ - ```unfiltered``` - пакеты проходят
+ - firewall не блокирует соединения.
+
+Выполним команду ```sudo nmap -sT 192.168.56.10```
 
 ![img](img/image5.png)
 
-Запускаем Vagrant для создания виртуальной машины в VirtualBox. Для этого в консоли Git Bash выполняем команду *VAGRANT_EXPERIMENTAL="disks" vagrant up*:
+Полученный вывод 
+
+```
+PORT   STATE SERVICE
+22/tcp open  ssh
+```
+
+означает, что:
+ - порт 22 открыт
+ - работает сервис SSH
+
+Выполним команду ```sudo nmap -sS 192.168.56.10```
 
 ![img](img/image6.png)
 
-После окончания процесса создания виртуальной машины нам нужно узнать пароль от root в GitLab.  Для этого выполним следующие команды.
+Это half-open scan.
+Вывод этой команды будет таким же, как и у предыдущей, но команда работает иначе:
+ - отправляется SYN
+ - получаем SYN/ACK
+ - соединение не завершается
 
+Поэтому его часто называют:
 
-Подключимся к созданной виртуальной машине с помощью команды *vagrant ssh*:
+stealth scan
+
+Выполним команду ```sudo nmap -sV 192.168.56.10```
 
 ![img](img/image7.png)
 
-Выведем пароль в консоль командой *sudo cat /etc/gitlab/initial_root_password*:
+В выводе мы видим:
+
+```
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 8.9p1 Ubuntu 3ubuntu0.13 (Ubuntu Linux; protocol 2.0)
+```
+т.е. кроме открытого порта мы смогли определить еще и версию операционной системы на защищаемой виртуальной машине.
+
+Подключимся к защищаемой машине и запустим команду просмотра логов Suricata:
 
 ![img](img/image8.png)
 
-В браузере откроем страницу по адресу http://gitlab.localdomain/ и увидим, что GitLab установлен и работает.
-Зайдём в систему с логином root и паролем, который мы получили на предыдущем шаге:
+В логах мы видим записи типа:
 
-![img](img/image9.png)
+```
+src_ip: 192.168.56.11
+dest_ip: 192.168.56.10
+event_type: flow
+proto: TCP
+```
 
-Теперь создадим свой проект в GitLab. Для этого в web-интерфейсе нажмём “New project”, а затем “Create blank project”:
-
-![img](img/image10.png)
-
-Заполним поле Project name и нажмём Create project:
-
-![img](img/image11.png)
-
-![img](img/image12.png)
-
-Зарегистрируем gitlab-runner. Для этого в консоли, которая подключена к виртуальной машине с GitLab, выполним команду:
-
-![img](img/image13.png)
-
-и заполним запрашиваемые параметры:
-
-![img](img/image14.png)
-
-![img](img/image15.png)
-
-После регистрации запустим gitlab-runner выполнив команду:
-
-![img](img/image16.png)
-
-Проверим, что runner запущен:
-
-![img](img/image17.png)
-
-Также мы можем увидеть запущенный runner в web-интерфейсе GitLab:
-
-![img](img/image18.png)
-
-
-
+это свидетельствует о том, что IDS анализирует сетевой трафик и фиксирует попытки подключения к различным портам.
 
 
 ## Задание 2
