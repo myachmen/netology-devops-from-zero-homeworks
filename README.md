@@ -6,7 +6,7 @@
 
 ## Задание 1. Создать и настроить репозиторий для дальнейшей работы на курсе
 
-Полный текст задания приведён по ![ссылке](https://github.com/netology-code/sysadm-homeworks/blob/devsys10/02-git-01-vcs/README.md)
+Полный текст задания можно посмотреть [в репозитории Netology](https://github.com/netology-code/sysadm-homeworks/blob/devsys10/02-git-01-vcs/README.md).
 
 
 
@@ -14,79 +14,14 @@
 
 Для выполнения задания выполним следующие действия.
 
-Установим Vagrant на свой компьютер:
+У меня уже существует зарегистрированный аккаунт на https://github.com/, поэтому сразу перейдём к созданию нового репозитория.
+Для этого на сайте выберем пункт меню **"New repository"**:
 
 ![img](img/image1.png)
 
+На открывшейся странице ведём имя репозитория **devops-netology** и выставим остальные настройки согласно заданию:
+
 ![img](img/image2.png)
-
-Склонируем репозиторий с домашним заданием с GitHub себе на компьютер:
-
-![img](img/image3.png)
-
-Отредактируем файл hosts у себя на компьютере. Добавим в него строку *192.168.56.10 gitlab.localdomain gitlab*:
-
-![img](img/image4.png)
-
-Эта информация взята из Vagrantfile:
-
-![img](img/image5.png)
-
-Запускаем Vagrant для создания виртуальной машины в VirtualBox. Для этого в консоли Git Bash выполняем команду *VAGRANT_EXPERIMENTAL="disks" vagrant up*:
-
-![img](img/image6.png)
-
-После окончания процесса создания виртуальной машины нам нужно узнать пароль от root в GitLab.  Для этого выполним следующие команды.
-
-
-Подключимся к созданной виртуальной машине с помощью команды *vagrant ssh*:
-
-![img](img/image7.png)
-
-Выведем пароль в консоль командой *sudo cat /etc/gitlab/initial_root_password*:
-
-![img](img/image8.png)
-
-В браузере откроем страницу по адресу http://gitlab.localdomain/ и увидим, что GitLab установлен и работает.
-Зайдём в систему с логином root и паролем, который мы получили на предыдущем шаге:
-
-![img](img/image9.png)
-
-Теперь создадим свой проект в GitLab. Для этого в web-интерфейсе нажмём “New project”, а затем “Create blank project”:
-
-![img](img/image10.png)
-
-Заполним поле Project name и нажмём Create project:
-
-![img](img/image11.png)
-
-![img](img/image12.png)
-
-Зарегистрируем gitlab-runner. Для этого в консоли, которая подключена к виртуальной машине с GitLab, выполним команду:
-
-![img](img/image13.png)
-
-и заполним запрашиваемые параметры:
-
-![img](img/image14.png)
-
-![img](img/image15.png)
-
-После регистрации запустим gitlab-runner выполнив команду:
-
-![img](img/image16.png)
-
-Проверим, что runner запущен:
-
-![img](img/image17.png)
-
-Также мы можем увидеть запущенный runner в web-интерфейсе GitLab:
-
-![img](img/image18.png)
-
-
-
-
 
 ## Задание 2
 
