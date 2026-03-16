@@ -82,3 +82,53 @@
 Для отправки второго тега в удалённые репозитории выполним команды ```git push origin v0.1``` и ```git push gitlab v0.1```:
 
 ![img](img/image12.png)
+
+Для того, чтобы проверить теги на сайтах перейдём в соответствующие разделы на GitLab и Github:
+
+![img](img/image13.png)
+
+![img](img/image14.png)
+
+
+## Задание 3. Ветки
+
+Полный текст задания можно посмотреть [в репозитории Netology](https://github.com/netology-code/sysadm-homeworks/blob/devsys10/02-git-02-base/README.md#%D0%B7%D0%B0%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5-3-%D0%B2%D0%B5%D1%82%D0%BA%D0%B8).
+
+## Решение 3
+
+Для проверки с каким удалённым репозиторием сейчас связана ветка main выполним команду ```git branch -vv```:
+
+![img](img/image15.png)
+
+Из вывода мы видим, что main сейчас связана с репозиторием на GitLab.
+Для переключения main на Github выполним команду ``` git branch --set-upstream-to=origin/main main```:
+
+![img](img/image16.png)
+
+Для проверки переключения снова выполним команду ```git branch -vv```:
+
+![img](img/image17.png)
+
+Для поиска хеша коммита ```Prepare to delete and move``` выполним команду ```git log --oneline```:
+
+![img](img/image18.png)
+
+Перейдём на этот коммит выполнив команду ```git checkout ХЕШ_КОММИТА```:
+
+![img](img/image19.png)
+
+Для того, чтобы создать от этого коммита новую ветку ```fix``` выполним команду ```git switch -c fix```:
+
+![img](img/imag20.png)
+
+Для отправки ветки ```fix``` в удалённый репозиторий на Github выполним команду ```git push -u origin fix```:
+
+![img](img/imag21.png)
+
+Для проверки снова выполним команду ```git branch -vv```:
+
+![img](img/imag22.png)
+
+Для визуального просмотра схемы коммитов перейдём в раздел Network на сайте Github:
+
+![img](img/imag23.png)
