@@ -156,3 +156,23 @@
 Полный текст задания можно посмотреть [в репозитории Netology](https://github.com/netology-code/sysadm-homeworks/blob/devsys10/02-git-02-base/README.md#%D0%B7%D0%B0%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5-4-%D1%83%D0%BF%D1%80%D0%BE%D1%89%D0%B0%D0%B5%D0%BC-%D1%81%D0%B5%D0%B1%D0%B5-%D0%B6%D0%B8%D0%B7%D0%BD%D1%8C).
 
 ## Решение 4
+
+Для практики работы в визуальном редакторе запустим IDE PyCharm и откроем наш репозиторий на Github:
+
+![img](img/image28.png)
+
+Отредактируем файл README.md из ветки ```fix``` и отправим изменения в удалённый репозиторий:
+
+![img](img/image29.png)
+
+![img](img/image30.png)
+
+Посмотрим изменения в репозитории на сайте Github:
+
+![img](img/image31.png)
+
+
+
+[Ссылка](https://gitlab.com/m.yachmen/devops-netology) на репозиторий на GitLab.
+
+[Ссылка](https://github.com/myachmen/devops-netology/tree/main) на репозиторий на Github.
