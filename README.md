@@ -3,7 +3,7 @@
 
 ## Задание 1. Создать и настроить репозиторий для дальнейшей работы на курсе
 
-Полный текст задания можно посмотреть [в репозитории Netology](https://github.com/netology-code/sysadm-homeworks/blob/devsys10/02-git-02-base/README.md).
+Полный текст задания можно посмотреть [в репозитории Netology](https://github.com/netology-code/sysadm-homeworks/blob/devsys10/02-git-02-base/README.md#%D0%B7%D0%B0%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5-1-%D0%B7%D0%BD%D0%B0%D0%BA%D0%BE%D0%BC%D0%B8%D0%BC%D1%81%D1%8F-%D1%81-gitlab-%D0%B8-bitbucket).
 
 
 ## Решение 1
@@ -45,7 +45,7 @@
 
 ## Задание 2. Теги
 
-Полный текст задания можно посмотреть [в репозитории Netology](https://github.com/netology-code/sysadm-homeworks/blob/devsys10/02-git-02-base/README.md).
+Полный текст задания можно посмотреть [в репозитории Netology](https://github.com/netology-code/sysadm-homeworks/blob/devsys10/02-git-02-base/README.md#%D0%B7%D0%B0%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5-2-%D1%82%D0%B5%D0%B3%D0%B8).
 
 ## Решение 2
 
@@ -132,3 +132,27 @@
 Для визуального просмотра схемы коммитов перейдём в раздел Network на сайте Github:
 
 ![img](img/imag23.png)
+
+Находясь в ветке ```fix``` добавим в файл README.md новую строку, сохраним файл и закоммитим изменения.
+Для этого выполним команды ```git add README.md``` и ```git commit -m "Add note to README in fix branch"```:
+
+![img](img/imag24.png)
+
+Для отправки изменений на Github выполним команду ```git push```:
+
+![img](img/imag25.png)
+
+На сайте Github в разделе Network посмотрим, как изменилась схема коммитов:
+
+![img](img/imag26.png)
+
+Изменения так же можно увидеть в консоли выполнив команду ```git log --oneline --graph --decorate --all```:
+
+![img](img/imag27.png)
+
+
+## Задание 4. Упрощаем себе жизнь
+
+Полный текст задания можно посмотреть [в репозитории Netology](https://github.com/netology-code/sysadm-homeworks/blob/devsys10/02-git-02-base/README.md#%D0%B7%D0%B0%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5-4-%D1%83%D0%BF%D1%80%D0%BE%D1%89%D0%B0%D0%B5%D0%BC-%D1%81%D0%B5%D0%B1%D0%B5-%D0%B6%D0%B8%D0%B7%D0%BD%D1%8C).
+
+## Решение 4
