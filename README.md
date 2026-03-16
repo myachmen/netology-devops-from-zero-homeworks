@@ -119,36 +119,36 @@
 
 Для того, чтобы создать от этого коммита новую ветку ```fix``` выполним команду ```git switch -c fix```:
 
-![img](img/imag20.png)
+![img](img/image20.png)
 
 Для отправки ветки ```fix``` в удалённый репозиторий на Github выполним команду ```git push -u origin fix```:
 
-![img](img/imag21.png)
+![img](img/image21.png)
 
 Для проверки снова выполним команду ```git branch -vv```:
 
-![img](img/imag22.png)
+![img](img/image22.png)
 
 Для визуального просмотра схемы коммитов перейдём в раздел Network на сайте Github:
 
-![img](img/imag23.png)
+![img](img/image23.png)
 
 Находясь в ветке ```fix``` добавим в файл README.md новую строку, сохраним файл и закоммитим изменения.
 Для этого выполним команды ```git add README.md``` и ```git commit -m "Add note to README in fix branch"```:
 
-![img](img/imag24.png)
+![img](img/image24.png)
 
 Для отправки изменений на Github выполним команду ```git push```:
 
-![img](img/imag25.png)
+![img](img/image25.png)
 
 На сайте Github в разделе Network посмотрим, как изменилась схема коммитов:
 
-![img](img/imag26.png)
+![img](img/image26.png)
 
 Изменения так же можно увидеть в консоли выполнив команду ```git log --oneline --graph --decorate --all```:
 
-![img](img/imag27.png)
+![img](img/image27.png)
 
 
 ## Задание 4. Упрощаем себе жизнь
