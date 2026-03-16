@@ -7,3 +7,4 @@
 ## Модуль "Системы управления версиями"
 
 - [Системы контроля версий](../../tree/hw-Version_control_systems)
+- [Основы Git](../../tree/hw-Version_control_systems)
