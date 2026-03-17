@@ -1,10 +1,27 @@
-![GitHub](https://img.shields.io/badge/GitHub-Repository-black)
-![Course](https://img.shields.io/badge/Course-DevOps-blue)
-![Platform](https://img.shields.io/badge/Platform-Netology-green)
+# Домашнее задание по теме "Основы Git" Ячмень Марк Викторович
 
-# Домашние задания по курсу "Devops-инженер с нуля: расширенный курс" От Нетологии
 
-## Модуль "Системы управления версиями"
+## Задание 1. Создать и настроить репозиторий для дальнейшей работы на курсе
 
-- [Системы контроля версий](../../tree/hw-Version_control_systems)
-- [Основы Git](../../tree/hw-Version_control_systems)
+Полный текст задания можно посмотреть [в репозитории Netology](https://github.com/netology-code/sysadm-homeworks/blob/devsys10/02-git-02-base/README.md#%D0%B7%D0%B0%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5-1-%D0%B7%D0%BD%D0%B0%D0%BA%D0%BE%D0%BC%D0%B8%D0%BC%D1%81%D1%8F-%D1%81-gitlab-%D0%B8-bitbucket).
+
+
+## Решение 1
+
+### GitLab
+
+Для выполнения задания выполним следующие действия.
+
+Аутентифицируемся на сайте https://gitlab.com/ с помощью учётной записи Google и приступим к созданию нового проекта.
+
+В форме создания нового проекта введём требуемые по заданию значения:
+
+![img](img/image1.png)
+
+и нажмём кнопку **Create project**.
+
+Выполним команду ```git remote -v```:
+
+![img](img/image2.png)
+
+В выводе мы видим, что сейчас в Git подключен репозиторий с Github.
