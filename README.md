@@ -15,6 +15,7 @@
 ## Модуль "Операционная система Linux" [сертификат](Electronic_certificate/SLINB-51-9785269.pdf)
 
 - [Процессы, управление процессами](Materials/Linux_operating_system/Processes_process_management.pdf) ([docx](Materials/Linux_operating_system/Processes_process_management.docx))
+- [Дисковые системы](Materials/Linux_operating_system/Disk_systems.pdf) ([docx](Materials/Linux_operating_system/Disk_systems.docx))
 
 ## Модуль "Администрирование операционной системы Linux" [сертификат](Electronic_certificate/)
 
