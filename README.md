@@ -12,7 +12,7 @@
 - [Знакомство с операционной системой Linux](Materials/Introduction_to_the_Linux_operating_system.pdf) ([docx](Materials/Introduction_to_the_Linux_operating_system.docx))
 - [Основы работы в терминалe ОС Linux](Materials/Basics_of_working_in_the_Linux_OS_terminal.pdf) ([docx](Materials/Basics_of_working_in_the_Linux_OS_terminal.docx))
 
-## Модуль "Операционная система Linux" [сертификат](Electronic_certificate/)
+## Модуль "Операционная система Linux" [сертификат](Electronic_certificate/SLINB-51-9785269.pdf)
 
 - [Процессы, управление процессами](Materials/Linux_operating_system/Processes_process_management.pdf) ([docx](Materials/Linux_operating_system/Processes_process_management.docx))
 
