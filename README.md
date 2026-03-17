@@ -2,7 +2,7 @@
 ![Course](https://img.shields.io/badge/Course-DevOps-blue)
 ![Platform](https://img.shields.io/badge/Platform-Netology-green)
 
-# Домашние задания по курсу "Devops-инженер с нуля: расширенный курс" От Нетологии
+# Домашние задания по курсу "Devops-инженер с нуля: расширенный курс" от Нетологии
 
 ## Модуль "IT-системы и операционная система Linux"
 
