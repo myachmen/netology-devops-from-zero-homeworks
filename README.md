@@ -6,7 +6,7 @@
 
 ## Модуль "IT-системы и операционная система Linux" [сертификат](Electronic_certificate/SLINA-51-9785269.pdf)
 
-- [Архитектура компьютера. Операционная система](Materials/Архитектура компьютера_Операционная_система.pdf)
+- [Архитектура компьютера. Операционная система](Materials/Computer_architecture_Operating_system.pdf)
 
 ## Модуль "Операционная система Linux" [сертификат](Electronic_certificate/)
 
