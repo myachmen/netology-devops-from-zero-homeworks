@@ -90,7 +90,7 @@
 
 Первый коммит в списке это момент создания функции.
 
-Так же мы види автора коммита: ** Martin Atkins <mart@degeneration.co.uk>**.
+Так же мы види автора коммита: **Martin Atkins <mart@degeneration.co.uk>**.
 
 
 
