@@ -2,15 +2,19 @@
 ![Course](https://img.shields.io/badge/Course-DevOps-blue)
 ![Platform](https://img.shields.io/badge/Platform-Netology-green)
 
+
+
 # Домашние задания по курсу "Devops-инженер с нуля: расширенный курс" от Нетологии
 
 ## Модуль "IT-системы и операционная система Linux" [сертификат](Electronic_certificate/SLINA-51-9785269.pdf)
 
 - [Архитектура компьютера. Операционная система](Materials/Computer_architecture_Operating_system.pdf) ([docx](Materials/Computer_architecture_Operating_system.docx))
 - [Знакомство с операционной системой Linux](Materials/Introduction_to_the_Linux_operating_system.pdf) ([docx](Materials/Introduction_to_the_Linux_operating_system.docx))
-- [Основы работы в терминалe ОС Linux](Materials/Basics_of_working_in_the_Linux_OS_terminal.pdf) ([docx](Materials/Basics_of_working_in_the_Linux_OS_terminaldocx))
+- [Основы работы в терминалe ОС Linux](Materials/Basics_of_working_in_the_Linux_OS_terminal.pdf) ([docx](Materials/Basics_of_working_in_the_Linux_OS_terminal.docx))
 
 ## Модуль "Операционная система Linux" [сертификат](Electronic_certificate/)
+
+- [Процессы, управление процессами](Materials/Linux_operating_system/Processes_process_management.pdf) ([docx](Materials/Linux_operating_system/Processes_process_management.docx))
 
 ## Модуль "Администрирование операционной системы Linux" [сертификат](Electronic_certificate/)
 
