@@ -272,10 +272,10 @@ yandex_compute_snapshot_schedule
 # Terraform Outputs
 
 ```text
-alb_external_ip = "158.160.211.54"
-bastion_public_ip = "62.84.115.177"
-grafana_public_ip = "178.154.203.52"
-kibana_public_ip = "178.154.206.68"
+alb_external_ip = 158.160.211.54
+bastion_public_ip = 62.84.115.177
+grafana_public_ip = 178.154.203.52
+kibana_public_ip = 178.154.206.68
 ```
 
 ---
