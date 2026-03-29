@@ -1,0 +1,27 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Terraform variables
+terraform.tfvars
+*.auto.tfvars
+
+# SSH keys
+*.pem
+*.key
+
+# Vagrant
+.vagrant/
+
+# Ansible
+*.retry
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
