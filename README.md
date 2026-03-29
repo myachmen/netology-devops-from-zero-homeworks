@@ -72,9 +72,19 @@
 
 ## 1. Клонирование репозитория
 
+Проект расположен в ветке:
+
+
+course_project
+
 ```bash
 git clone https://github.com/myachmen/netology-devops-from-zero-homeworks.git
-cd netology-devops-from-zero-homeworks/terraform
+cd netology-devops-from-zero-homeworks
+
+# Переключиться на ветку проекта
+git checkout course_project
+
+cd terraform
 ```
 
 ---
@@ -165,31 +175,47 @@ http://178.154.206.68:5601
 
 http://158.160.211.54
 
----
-
 # Мониторинг
 
-Используется:
+Для мониторинга инфраструктуры используется стек:
 
-- Prometheus
-- Node Exporter
-- Grafana
+- **Prometheus** — сбор и хранение метрик
+- **Node Exporter** — сбор системных метрик с серверов
+- **Grafana** — визуализация метрик
 
-В Grafana реализованы:
+Реализован мониторинг следующих параметров:
 
-- мониторинг CPU
+- загрузка CPU
 - использование памяти
-- сетевые показатели
+- сетевой трафик
+- использование дисков
 - состояние сервисов
 
-Добавить:
+---
 
-```
-img/grafana_dashboard.png
-img/prometheus_targets.png
-```
+## Prometheus Targets
+
+В системе настроен сбор метрик со всех серверов.
+
+Статус целей Prometheus:
+
+![Prometheus Targets](img/prometheus_targets.png)
 
 ---
+
+## Grafana Dashboard
+
+Для визуализации метрик используется Grafana.
+
+### Мониторинг сервера web-1
+
+![Grafana Dashboard Web-1](img/grafana_dashboard_web1.png)
+
+---
+
+### Мониторинг сервера web-2
+
+![Grafana Dashboard Web-2](img/grafana_dashboard_web2.png)
 
 # Логирование
 
