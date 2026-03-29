@@ -55,3 +55,8 @@ variable "private_subnet_b_name" {
   type        = string
   default     = "private-subnet-b"
 }
+
+variable "ubuntu_image_id" {
+  description = "Fixed Ubuntu image ID for compute instances"
+  type        = string
+}

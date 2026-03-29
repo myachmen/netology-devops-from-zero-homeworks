@@ -19,7 +19,7 @@ resource "yandex_compute_instance" "bastion" {
 
   boot_disk {
     initialize_params {
-      image_id = data.yandex_compute_image.ubuntu_2204.id
+      image_id = var.ubuntu_image_id
       size     = 10
     }
   }
@@ -64,7 +64,7 @@ resource "yandex_compute_instance" "web_1" {
 
   boot_disk {
     initialize_params {
-      image_id = data.yandex_compute_image.ubuntu_2204.id
+      image_id = var.ubuntu_image_id
       size     = 10
     }
   }
@@ -109,7 +109,7 @@ resource "yandex_compute_instance" "web_2" {
 
   boot_disk {
     initialize_params {
-      image_id = data.yandex_compute_image.ubuntu_2204.id
+      image_id = var.ubuntu_image_id
       size     = 10
     }
   }
@@ -154,7 +154,7 @@ resource "yandex_compute_instance" "prometheus" {
 
   boot_disk {
     initialize_params {
-      image_id = data.yandex_compute_image.ubuntu_2204.id
+      image_id = var.ubuntu_image_id
       size     = 10
     }
   }
@@ -202,7 +202,7 @@ resource "yandex_compute_instance" "elasticsearch" {
 
   boot_disk {
     initialize_params {
-      image_id = data.yandex_compute_image.ubuntu_2204.id
+      image_id = var.ubuntu_image_id
       size     = 20
     }
   }
@@ -250,7 +250,7 @@ resource "yandex_compute_instance" "grafana" {
 
   boot_disk {
     initialize_params {
-      image_id = data.yandex_compute_image.ubuntu_2204.id
+      image_id = var.ubuntu_image_id
       size     = 10
     }
   }
@@ -298,7 +298,7 @@ resource "yandex_compute_instance" "kibana" {
 
   boot_disk {
     initialize_params {
-      image_id = data.yandex_compute_image.ubuntu_2204.id
+      image_id = var.ubuntu_image_id
       size     = 20
     }
   }
