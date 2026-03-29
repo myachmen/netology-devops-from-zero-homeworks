@@ -64,11 +64,7 @@
 
 # Схема инфраструктуры
 
-(Добавить изображение)
-
-Пример:
-
-![Architecture](img/architecture.png)
+![Infrastructure Diagram](img/infrastructure-diagram.png)
 
 ---
 
