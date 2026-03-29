@@ -73,7 +73,7 @@
 
 ## 1. Клонирование репозитория
 
-Проект расположен в ветке: course_project
+Проект расположен в ветке `course_project`
 
 ```bash
 git clone https://github.com/myachmen/netology-devops-from-zero-homeworks.git
@@ -316,6 +316,27 @@ kibana_public_ip = "178.154.206.68"
 ```
 
 ---
+
+# Проверка работы системы
+
+После развертывания инфраструктуры доступны:
+
+Grafana:
+http://178.154.203.52:3000
+
+Kibana:
+http://178.154.206.68:5601
+
+Web-приложение через Load Balancer:
+http://158.160.211.54
+
+При обновлении страницы отображается:
+
+This page is served from: web-1  
+или  
+This page is served from: web-2
+
+Это подтверждает корректную работу балансировки.
 
 # Возможные улучшения
 
