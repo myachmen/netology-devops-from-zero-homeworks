@@ -262,7 +262,6 @@ kibana_public_ip = "178.154.206.68"
 │       └── hosts.ini
 │
 ├── img
-│   └── screenshots
 │
 └── README.md
 ```
