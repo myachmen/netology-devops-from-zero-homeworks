@@ -129,7 +129,7 @@ terraform apply
 ```bash
 cd ../ansible
 
-ansible-playbook site.yml
+ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.ini site.yml
 ```
 
 ---
@@ -139,8 +139,10 @@ ansible-playbook site.yml
 ## Bastion
 
 ```bash
-ssh ubuntu@62.84.115.177
+ssh -i ~/.ssh/id_rsa yc-user@62.84.115.177
 ```
+
+Для доступа используется приватный ключ, указанный при создании при создании виртуальной машины.
 
 ---
 
@@ -152,7 +154,7 @@ http://178.154.203.52:3000
 
 ```
 admin
-admin
+NewPass123!
 ```
 
 ---
