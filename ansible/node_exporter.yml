@@ -1,0 +1,16 @@
+- name: Install node exporter on web servers
+  hosts: web
+  become: true
+
+  tasks:
+    - name: Install prometheus-node-exporter
+      apt:
+        name: prometheus-node-exporter
+        state: present
+        update_cache: true
+
+    - name: Ensure prometheus-node-exporter is enabled and started
+      service:
+        name: prometheus-node-exporter
+        state: started
+        enabled: true

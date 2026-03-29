@@ -1,0 +1,248 @@
+#############################################
+# Web servers
+#############################################
+
+- name: Configure web servers
+  hosts: web
+  become: true
+
+  tasks:
+
+    - name: Update apt cache
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Ensure nginx is enabled and started
+      service:
+        name: nginx
+        state: started
+        enabled: true
+
+    - name: Deploy index.html
+      template:
+        src: /vagrant/site/index.html
+        dest: /var/www/html/index.html
+        owner: root
+        group: root
+        mode: '0644'
+
+
+#############################################
+# Elasticsearch
+#############################################
+
+- name: Install Elasticsearch in Docker
+  hosts: elasticsearch_hosts
+  become: true
+
+  vars:
+    elasticsearch_compose_dir: /opt/elasticsearch
+
+  tasks:
+
+    - name: Update apt cache
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install Docker
+      apt:
+        name:
+          - docker.io
+          - docker-compose
+        state: present
+
+    - name: Ensure Docker started
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create Elasticsearch directory
+      file:
+        path: "{{ elasticsearch_compose_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Create docker-compose.yml
+      copy:
+        dest: "{{ elasticsearch_compose_dir }}/docker-compose.yml"
+        mode: '0644'
+        content: |
+          version: '3.8'
+
+          services:
+            elasticsearch:
+              image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
+              container_name: elasticsearch
+              restart: unless-stopped
+              environment:
+                - discovery.type=single-node
+                - xpack.security.enabled=false
+                - ES_JAVA_OPTS=-Xms1g -Xmx1g
+              ulimits:
+                memlock:
+                  soft: -1
+                  hard: -1
+              volumes:
+                - esdata:/usr/share/elasticsearch/data
+              ports:
+                - "9200:9200"
+
+          volumes:
+            esdata:
+
+    - name: Run Elasticsearch
+      command: docker-compose up -d
+      args:
+        chdir: "{{ elasticsearch_compose_dir }}"
+
+#############################################
+# Kibana
+#############################################
+
+- name: Install Kibana in Docker
+  hosts: kibana_hosts
+  become: true
+
+  vars:
+    kibana_compose_dir: /opt/kibana
+    elasticsearch_host: 10.10.20.11
+
+  tasks:
+
+    - name: Update apt cache
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install Docker
+      apt:
+        name:
+          - docker.io
+          - docker-compose
+        state: present
+
+    - name: Ensure Docker started
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create Kibana directory
+      file:
+        path: "{{ kibana_compose_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Create docker-compose.yml
+      copy:
+        dest: "{{ kibana_compose_dir }}/docker-compose.yml"
+        mode: '0644'
+        content: |
+          version: '3.8'
+
+          services:
+            kibana:
+              image: docker.elastic.co/kibana/kibana:8.12.2
+              container_name: kibana
+              restart: unless-stopped
+              environment:
+                - ELASTICSEARCH_HOSTS=http://{{ elasticsearch_host }}:9200
+              ports:
+                - "5601:5601"
+
+    - name: Run Kibana
+      command: docker-compose up -d
+      args:
+        chdir: "{{ kibana_compose_dir }}"
+
+#############################################
+# Filebeat
+#############################################
+
+- name: Install Filebeat on web servers
+  hosts: web
+  become: true
+
+  vars:
+    elasticsearch_host: 10.10.20.11
+    kibana_host: 158.160.114.210
+    filebeat_local_deb: /vagrant/packages/filebeat.deb
+    filebeat_remote_deb: /tmp/filebeat.deb
+
+  tasks:
+
+    - name: Remove broken Elastic repository file if present
+      file:
+        path: /etc/apt/sources.list.d/elastic-8.x.list
+        state: absent
+
+    - name: Install required packages
+      apt:
+        name:
+          - apt-transport-https
+        state: present
+        update_cache: true
+
+    - name: Check Filebeat package exists on control node
+      delegate_to: localhost
+      become: false
+      stat:
+        path: "{{ filebeat_local_deb }}"
+      register: filebeat_pkg_local
+
+    - name: Fail if Filebeat package is missing on control node
+      fail:
+        msg: "Filebeat package not found at {{ filebeat_local_deb }}"
+      when: not filebeat_pkg_local.stat.exists
+
+    - name: Copy Filebeat deb package to remote host
+      copy:
+        src: "{{ filebeat_local_deb }}"
+        dest: "{{ filebeat_remote_deb }}"
+        mode: '0644'
+
+    - name: Install Filebeat package
+      apt:
+        deb: "{{ filebeat_remote_deb }}"
+
+    - name: Configure nginx module
+      copy:
+        dest: /etc/filebeat/modules.d/nginx.yml
+        mode: '0644'
+        content: |
+          - module: nginx
+            access:
+              enabled: true
+              var.paths: ["/var/log/nginx/access.log"]
+            error:
+              enabled: true
+              var.paths: ["/var/log/nginx/error.log"]
+
+    - name: Configure Filebeat
+      copy:
+        dest: /etc/filebeat/filebeat.yml
+        mode: '0644'
+        content: |
+          filebeat.config.modules:
+            path: ${path.config}/modules.d/*.yml
+            reload.enabled: false
+
+          output.elasticsearch:
+            hosts: ["http://{{ elasticsearch_host }}:9200"]
+
+          setup.kibana:
+            host: "http://{{ kibana_host }}:5601"
+
+    - name: Enable and restart Filebeat
+      service:
+        name: filebeat
+        enabled: true
+        state: restarted

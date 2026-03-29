@@ -1,0 +1,44 @@
+- name: Install Grafana from local deb package
+  hosts: grafana_hosts
+  become: true
+
+  vars:
+    grafana_local_deb: "/vagrant/packages/grafana.deb"
+    grafana_remote_deb: "/tmp/grafana.deb"
+
+  tasks:
+    - name: Install prerequisites
+      apt:
+        name:
+          - adduser
+          - libfontconfig1
+        state: present
+        update_cache: true
+
+    - name: Check Grafana package exists on control node
+      delegate_to: localhost
+      become: false
+      stat:
+        path: "{{ grafana_local_deb }}"
+      register: grafana_pkg_local
+
+    - name: Fail if Grafana package is missing on control node
+      fail:
+        msg: "Grafana package not found at {{ grafana_local_deb }}"
+      when: not grafana_pkg_local.stat.exists
+
+    - name: Copy Grafana deb package to remote host
+      copy:
+        src: "{{ grafana_local_deb }}"
+        dest: "{{ grafana_remote_deb }}"
+        mode: '0644'
+
+    - name: Install Grafana package
+      apt:
+        deb: "{{ grafana_remote_deb }}"
+
+    - name: Ensure grafana-server is enabled and started
+      service:
+        name: grafana-server
+        state: started
+        enabled: true

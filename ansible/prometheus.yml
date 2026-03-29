@@ -1,0 +1,41 @@
+- name: Install and configure Prometheus
+  hosts: prometheus_hosts
+  become: true
+
+  tasks:
+    - name: Install prometheus
+      apt:
+        name: prometheus
+        state: present
+        update_cache: true
+
+    - name: Deploy Prometheus config
+      copy:
+        dest: /etc/prometheus/prometheus.yml
+        content: |
+          global:
+            scrape_interval: 15s
+
+          scrape_configs:
+            - job_name: 'prometheus'
+              static_configs:
+                - targets: ['localhost:9090']
+
+            - job_name: 'web-servers'
+              static_configs:
+                - targets:
+                    - '10.10.20.7:9100'
+                    - '10.10.30.27:9100'
+      notify: Restart prometheus
+
+    - name: Ensure prometheus is enabled and started
+      service:
+        name: prometheus
+        state: started
+        enabled: true
+
+  handlers:
+    - name: Restart prometheus
+      service:
+        name: prometheus
+        state: restarted
