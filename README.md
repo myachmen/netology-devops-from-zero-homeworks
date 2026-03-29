@@ -73,10 +73,7 @@
 
 ## 1. Клонирование репозитория
 
-Проект расположен в ветке:
-
-
-course_project
+Проект расположен в ветке: course_project
 
 ```bash
 git clone https://github.com/myachmen/netology-devops-from-zero-homeworks.git
@@ -149,7 +146,7 @@ ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.ini site.yml
 ssh -i ~/.ssh/id_rsa yc-user@62.84.115.177
 ```
 
-Для доступа используется приватный ключ, указанный при создании при создании виртуальной машины.
+Для доступа используется приватный ключ, указанный при создании виртуальной машины.
 
 ---
 
@@ -175,6 +172,8 @@ http://178.154.206.68:5601
 ## Web-приложение (через Load Balancer)
 
 http://158.160.211.54
+
+---
 
 # Мониторинг
 
@@ -306,6 +305,12 @@ kibana_public_ip = "178.154.206.68"
 │       └── hosts.ini
 │
 ├── img
+│   ├── infrastructure-diagram.png
+│   ├── grafana_dashboard_web1.png
+│   ├── grafana_dashboard_web2.png
+│   ├── prometheus_targets.png
+│   ├── kibana_logs.png
+│   └── web_via_alb.png
 │
 └── README.md
 ```
