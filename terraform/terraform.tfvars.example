@@ -6,12 +6,15 @@ cloud_id  = "your_cloud_id"
 folder_id = "your_folder_id"
 
 # Zones
-public_zone     = "ru-central1-a"
-private_zone_a  = "ru-central1-a"
-private_zone_b  = "ru-central1-b"
+public_zone   = "ru-central1-a"
+private_zone_a = "ru-central1-a"
+private_zone_b = "ru-central1-b"
 
 # Network settings
-network_name          = "netology-network"
-public_subnet_name    = "public-subnet-a"
+network_name         = "netology-network"
+public_subnet_name   = "public-subnet-a"
 private_subnet_a_name = "private-subnet-a"
 private_subnet_b_name = "private-subnet-b"
+
+# Ubuntu image (fixed to prevent VM recreation)
+ubuntu_image_id = "fd8hp7856k1rp50e73uu"
