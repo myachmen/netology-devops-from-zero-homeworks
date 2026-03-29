@@ -1,45 +1,314 @@
-![GitHub](https://img.shields.io/badge/GitHub-Repository-black)
-![Course](https://img.shields.io/badge/Course-DevOps-blue)
-![Platform](https://img.shields.io/badge/Platform-Netology-green)
+# Дипломный проект DevOps  
+## Автоматизированное развёртывание инфраструктуры в Yandex Cloud
 
+---
 
+# О проекте
 
-# Домашние задания по курсу "Devops-инженер с нуля: расширенный курс" от Нетологии
+В рамках дипломного проекта реализована полноценная облачная инфраструктура в **Yandex Cloud**, включающая:
 
-## Модуль "IT-системы и операционная система Linux" [сертификат](Electronic_certificate/SLINA-51-9785269.pdf)
+- развёртывание инфраструктуры через **Terraform**
+- конфигурацию серверов через **Ansible**
+- балансировку нагрузки через **Application Load Balancer**
+- мониторинг системы (**Prometheus + Grafana**)
+- централизованное логирование (**Elasticsearch + Kibana**)
+- автоматическое резервное копирование виртуальных машин
 
-- [Архитектура компьютера. Операционная система](Materials/Computer_architecture_Operating_system.pdf) ([docx](Materials/Computer_architecture_Operating_system.docx))
-- [Знакомство с операционной системой Linux](Materials/Introduction_to_the_Linux_operating_system.pdf) ([docx](Materials/Introduction_to_the_Linux_operating_system.docx))
-- [Основы работы в терминалe ОС Linux](Materials/Basics_of_working_in_the_Linux_OS_terminal.pdf) ([docx](Materials/Basics_of_working_in_the_Linux_OS_terminal.docx))
+Проект реализован с применением принципов:
 
-## Модуль "Операционная система Linux" [сертификат](Electronic_certificate/SLINB-51-9785269.pdf)
+- Infrastructure as Code (IaC)
+- автоматизации конфигурации
+- отказоустойчивости
+- централизованного мониторинга
 
-- [Процессы, управление процессами](Materials/Linux_operating_system/Processes_process_management.pdf) ([docx](Materials/Linux_operating_system/Processes_process_management.docx))
-- [Дисковые системы](Materials/Linux_operating_system/Disk_systems.pdf) ([docx](Materials/Linux_operating_system/Disk_systems.docx))
+---
 
-## Модуль "Администрирование операционной системы Linux" [сертификат](Electronic_certificate/)
+# Используемые технологии
 
-## Модуль "Программирование на Bash" [сертификат](Electronic_certificate/)
+| Компонент | Назначение |
+|-----------|-------------|
+| Terraform | Развёртывание инфраструктуры |
+| Ansible | Конфигурация серверов |
+| Nginx | Web-сервер |
+| Prometheus | Сбор метрик |
+| Grafana | Визуализация метрик |
+| Elasticsearch | Хранение логов |
+| Kibana | Просмотр логов |
+| Yandex Cloud | Облачная платформа |
+| Application Load Balancer | Балансировка нагрузки |
 
-## Модуль "Сеть, сетевые протоколы" [сертификат](Electronic_certificate/)
+---
 
-## Модуль "Виртуализация" [сертификат](Electronic_certificate/)
+# Архитектура инфраструктуры
 
-## Модуль "Автоматизация и CI/СD" [сертификат](Electronic_certificate/)
+Инфраструктура включает:
 
-## Модуль "Мониторинг" [сертификат](Electronic_certificate/SLINA-51-9785269.pdf)
+| Сервер | Назначение |
+|--------|-------------|
+| **bastion** | Доступ к инфраструктуре |
+| **web-1** | Web-сервер |
+| **web-2** | Web-сервер |
+| **prometheus** | Система мониторинга |
+| **grafana** | Визуализация метрик |
+| **elasticsearch** | Хранение логов |
+| **kibana** | Просмотр логов |
 
-## Модуль "Отказоустойчивость" [сертификат](Electronic_certificate/)
+Дополнительно используются:
 
-## Модуль "Системы хранения и передачи данных" [сертификат](Electronic_certificate/)
+- Application Load Balancer
+- Target Groups
+- Security Groups
+- Snapshot Backup
 
-## Модуль "Реляционные базы данных и администрирование баз данных" [сертификат](Electronic_certificate/)
+---
 
-## Модуль "Информационная безопасность" [сертификат](Electronic_certificate/)
+# Схема инфраструктуры
 
+(Добавить изображение)
 
-## Модуль "Системы управления версиями" [сертификат](Electronic_certificate/)
+Пример:
 
-- [Системы контроля версий](../../tree/hw-Version_control_systems)
-- [Основы Git](../../tree/hw-Git_fundamentals)
-- [Инструменты Git](../../tree/hw-Git_tools)
+![Architecture](img/architecture.png)
+
+---
+
+# Развёртывание инфраструктуры
+
+## 1. Клонирование репозитория
+
+```bash
+git clone https://github.com/myachmen/netology-devops-from-zero-homeworks.git
+cd netology-devops-from-zero-homeworks/terraform
+```
+
+---
+
+## 2. Подготовка переменных
+
+```bash
+cp terraform.tfvars.example terraform.tfvars
+```
+
+Заполнить:
+
+```hcl
+token           = "<OAuth_token>"
+cloud_id        = "<cloud_id>"
+folder_id       = "<folder_id>"
+ubuntu_image_id = "<ubuntu_image_id>"
+```
+
+---
+
+## 3. Инициализация Terraform
+
+```bash
+terraform init
+```
+
+---
+
+## 4. Проверка плана
+
+```bash
+terraform plan
+```
+
+---
+
+## 5. Применение конфигурации
+
+```bash
+terraform apply
+```
+
+---
+
+# Настройка серверов
+
+```bash
+cd ../ansible
+
+ansible-playbook site.yml
+```
+
+---
+
+# Доступ к сервисам
+
+## Bastion
+
+```bash
+ssh ubuntu@62.84.115.177
+```
+
+---
+
+## Grafana
+
+http://178.154.203.52:3000
+
+Логин:
+
+```
+admin
+admin
+```
+
+---
+
+## Kibana
+
+http://178.154.206.68:5601
+
+---
+
+## Web-приложение (через Load Balancer)
+
+http://158.160.211.54
+
+---
+
+# Мониторинг
+
+Используется:
+
+- Prometheus
+- Node Exporter
+- Grafana
+
+В Grafana реализованы:
+
+- мониторинг CPU
+- использование памяти
+- сетевые показатели
+- состояние сервисов
+
+Добавить:
+
+```
+img/grafana_dashboard.png
+img/prometheus_targets.png
+```
+
+---
+
+# Логирование
+
+Используется стек:
+
+- Elasticsearch
+- Kibana
+
+Собираются:
+
+- системные логи
+- логи web-сервера
+
+Добавить:
+
+```
+img/kibana_logs.png
+```
+
+---
+
+# Резервное копирование
+
+Реализовано автоматическое резервное копирование:
+
+- ежедневные snapshot
+- хранение — 7 дней
+
+Используется:
+
+```
+yandex_compute_snapshot_schedule
+```
+
+---
+
+# Terraform Outputs
+
+```text
+alb_external_ip = "158.160.211.54"
+bastion_public_ip = "62.84.115.177"
+grafana_public_ip = "178.154.203.52"
+kibana_public_ip = "178.154.206.68"
+```
+
+---
+
+# Структура репозитория
+
+```text
+.
+├── terraform
+│   ├── alb.tf
+│   ├── backup.tf
+│   ├── compute.tf
+│   ├── network.tf
+│   ├── outputs.tf
+│   ├── providers.tf
+│   ├── security.tf
+│   ├── variables.tf
+│   ├── terraform.tfvars.example
+│
+├── ansible
+│   ├── site.yml
+│   ├── prometheus.yml
+│   ├── grafana.yml
+│   ├── elasticsearch.yml
+│   ├── node_exporter.yml
+│   └── inventory
+│       └── hosts.ini
+│
+├── img
+│   └── screenshots
+│
+└── README.md
+```
+
+---
+
+# Скриншоты
+
+Добавить:
+
+- Terraform Apply
+- Prometheus Targets
+- Grafana Dashboard
+- Kibana Logs
+- Load Balancer
+- Web Response
+
+Пример:
+
+```
+![Grafana](img/grafana_dashboard.png)
+![Kibana](img/kibana_logs.png)
+```
+
+---
+
+# Возможные улучшения
+
+- Добавление HTTPS
+- Использование CI/CD
+- Автоматическое масштабирование
+- Использование managed сервисов
+
+---
+
+# Удаление инфраструктуры
+
+```bash
+terraform destroy
+```
+
+---
+
+# Автор
+
+Студент курса **DevOps-инженер с нуля**  
+Netology
