@@ -311,26 +311,6 @@ kibana_public_ip = "178.154.206.68"
 
 ---
 
-# Скриншоты
-
-Добавить:
-
-- Terraform Apply
-- Prometheus Targets
-- Grafana Dashboard
-- Kibana Logs
-- Load Balancer
-- Web Response
-
-Пример:
-
-```
-![Grafana](img/grafana_dashboard.png)
-![Kibana](img/kibana_logs.png)
-```
-
----
-
 # Возможные улучшения
 
 - Добавление HTTPS
