@@ -127,59 +127,166 @@ docker run hello-world
 
 ![img](img/image7.png)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Перезапустим сервис HAProxy и проверим его состояние:
-
-![img](img/image7.png)
-
-Для проверки работы алгоритма балансировки выполним несколько запросовк адресу  http://localhost.
-В ответах мы увидим, что отвечают разные сервера:
+Для создания публичного репозитория зайдём на сайт https://hub.docker.com и перейдём по ссылке Create a Repository:
 
 ![img](img/image8.png)
 
-В репозитории представлен [конфигурационный файл](L4_haproxy.cfg) HAProxy.
+Заполним поле Repository Name в соответствии с заданием, тип репозитория установим как Public и нажмём кнопку Create.
+
+![img](img/image9.png)
+
+![img](img/image10.png)
+
+
+Теперь снова перейдем к работе с локальной виртуальной машиной.
+
+Скачаем nginx:
+
+```
+docker pull nginx:1.29.0
+```
+
+![img](img/image11.png)
+
+Проверим список загруженных Docker Images:
+
+```
+docker images
+```
+
+![img](img/image12.png)
+
+Создадим папку для кастомизации nginx:
+
+```
+mkdir -p ~/custom-nginx
+cd ~/custom-nginx
+```
+
+Создадим файл index.html следующего содержания:
+
+```
+<html>
+<head>
+Hey, Netology
+</head>
+<body>
+<h1>I will be DevOps Engineer!</h1>
+</body>
+</html>
+```
+
+![img](img/image13.png)
+
+Создадим Dockerfile следующего содержания:
+
+```
+FROM nginx:1.29.0
+
+COPY index.html /usr/share/nginx/html/index.html
+```
+
+![img](img/image14.png)
+
+
+Соберём образ:
+
+```
+docker build -t custom-nginx:1.0.0 .
+```
+
+![img](img/image15.png)
+
+Выведем список Docker Images:
+
+```
+docker images
+```
+
+В списке видим только что собранный образ custom-nginx:1.0.0:
+
+![img](img/image16.png)
+
+Протестируем работу образа. Запустим контейнер на его базе:
+
+```
+docker run --rm -d --name test-custom-nginx -p 8080:80 custom-nginx:1.0.0
+```
+
+Выполним curl запрос:
+
+```
+curl http://127.0.0.1:8080
+```
+
+Запрос возвращает нам содержание файла index.hthl, который мы создали ранее:
+
+![img](img/image17.png)
+
+Остановим запущеный контейнер:
+
+```
+docker stop test-custom-nginx
+```
+
+Добавим к собранному образу тег с именем пользователя с сайта https://hub.docker.com:
+
+```
+docker tag custom-nginx:1.0.0 yamarkya/custom-nginx:1.0.0
+```
+
+Отправим образ в созданный ранее публичный репозиторий на сайте Docker:
+
+```
+docker push yamarkya/custom-nginx:1.0.0
+```
+
+![img](img/image18.png)
+
+Теперь собранный нами образ доступен по ссылке https://hub.docker.com/repository/docker/yamarkya/custom-nginx/general :
+
+![img](img/image19.png)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
