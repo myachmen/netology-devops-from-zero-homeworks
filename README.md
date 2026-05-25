@@ -842,6 +842,6 @@ docker compose down
 docker compose ps
 ```
 
-![img](img/image64.png)
+![img](img/image65.png)
 
 В выводе не увидим никаких запущеных контейнеров.
