@@ -45,7 +45,7 @@ Hey, Netology
 
 С такими настройками виртуальная машина будетт создана в VirtualBox из образа Ubuntu-22.04.
 
-Запустим создание виртуальной машины с помощью команды ```vagrant up```:
+Запустим создание виртуальной машины: ```vagrant up```:
 
 ![img](img/image2.png)
 
@@ -53,20 +53,62 @@ Hey, Netology
 
 ![img](img/image3.png)
 
-Подключимся к созданной вирптуальной машине с помощью команды ```vagrant ssh```:
+Подключимся к созданной вирптуальной машине: ```vagrant ssh```:
 
 ![img](img/image4.png)
 
-После подключения к виртуальной машине установим пакеты, необходимые для добавления внешнего APT-репозитория Docker с помощью команды ```sudo apt install -y ca-certificates curl gnupg lsb-release```:
+После подключения к виртуальной машине установим пакеты, необходимые для добавления внешнего APT-репозитория Docker: ```sudo apt install -y ca-certificates curl gnupg lsb-release```:
 
  - ca-certificates — набор корневых сертификатов для проверки HTTPS-соединений.
  - curl — утилита для скачивания файлов по HTTP/HTTPS.
  - gnupg — утилиты для работы с GPG-ключами репозиториев.
  - lsb-release — позволяет определить кодовое имя установленной Ubuntu, например jammy.
 
-Создадим директорию для хранения GPG-ключей APT-репозиториев с помощью команды ```sudo mkdir -p /etc/apt/keyrings```.
+Создадим директорию для хранения GPG-ключей APT-репозиториев: ```sudo mkdir -p /etc/apt/keyrings```.
 
+Скачаем GPG-ключ Docker: ```curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg```.
 
+Добавим официальный Docker-репозиторий в список источников APT:
+
+```
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+```
+
+Обновим список пакетов:
+
+```
+sudo apt update
+```
+
+После этого установим Docker Engine, Docker CLI, containerd, Buildx и Docker Compose plugin:
+
+```
+sudo apt install -y \
+docker-ce \
+docker-ce-cli \
+containerd.io \
+docker-buildx-plugin \
+docker-compose-plugin
+```
+
+![img](img/image5.png)
+
+Проверим установленные версии:
+
+```
+docker --version
+docker compose version
+```
+
+![img](img/image6.png)
+
+Добавим пользователя vagrant в группу docker:
+
+```
+sudo usermod -aG docker vagrant
+```
+
+Это нужно, чтобы выполнять команды docker без sudo.
 
 
 Откроем и отредактируем конфигурационный файл HAProxy:
@@ -74,6 +116,59 @@ Hey, Netology
 ![img](img/image5.png)
 
 ![img](img/image6.png)
+
+Проверим работу Docker:
+
+```
+docker run hello-world
+```
+
+Сообщение ```Hello from Docker!``` подтверждает, что Docker установлен и работает корректно.
+
+![img](img/image7.png)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Перезапустим сервис HAProxy и проверим его состояние:
 
