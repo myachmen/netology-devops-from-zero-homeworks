@@ -556,6 +556,292 @@ ls -l /data
 Это и говорит о том, что оба контейнера используют один и тот же каталог хостовой системы. Оба контейнера были запущены с bind mount текущего каталога хостовой системы в директорию /data контейнеров. Файл, созданный внутри контейнера CentOS, стал доступен как на хостовой системе, так и внутри контейнера Debian. Аналогично файл, созданный на хосте, был виден внутри обоих контейнеров. Это демонстрирует совместное использование данных между контейнерами через volume mount.
 
 
-## Задание 4
+## Задание 5
 
- - Запустите первый контейнер из образа centos c любым тегом в фоновом режиме, подключив папку текущий рабочий каталог $(pwd) на хостовой машине в /data контейнера, используя ключ -v.
+1. Создайте отдельную директорию(например /tmp/netology/docker/task5) и 2 файла внутри него. "compose.yaml" с содержимым:
+```
+version: "3"
+services:
+  portainer:
+    network_mode: host
+    image: portainer/portainer-ce:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+```
+
+"docker-compose.yaml" с содержимым:
+
+```
+version: "3"
+services:
+  registry:
+    image: registry:2
+
+    ports:
+    - "5000:5000"
+```
+
+И выполните команду "docker compose up -d". Какой из файлов был запущен и почему? (подсказка: https://docs.docker.com/compose/compose-application-model/#the-compose-file )
+
+2. Отредактируйте файл compose.yaml так, чтобы были запущенны оба файла. (подсказка: https://docs.docker.com/compose/compose-file/14-include/)
+
+3. Выполните в консоли вашей хостовой ОС необходимые команды чтобы залить образ custom-nginx как custom-nginx:latest в запущенное вами, локальное registry. Дополнительная документация: https://distribution.github.io/distribution/about/deploying/
+
+4. Откройте страницу "https://127.0.0.1:9000" и произведите начальную настройку portainer.(логин и пароль адмнистратора)
+
+5. Откройте страницу "http://127.0.0.1:9000/#!/home", выберите ваше local окружение. Перейдите на вкладку "stacks" и в "web editor" задеплойте следующий компоуз:
+
+```
+version: '3'
+
+services:
+  nginx:
+    image: 127.0.0.1:5000/custom-nginx
+    ports:
+      - "9090:80"
+```
+
+6. Перейдите на страницу "http://127.0.0.1:9000/#!/2/docker/containers", выберите контейнер с nginx и нажмите на кнопку "inspect". В представлении <> Tree разверните поле "Config" и сделайте скриншот от поля "AppArmorProfile" до "Driver".
+
+7. Удалите любой из манифестов компоуза(например compose.yaml). Выполните команду "docker compose up -d". Прочитайте warning, объясните суть предупреждения и выполните предложенное действие. Погасите compose-проект ОДНОЙ(обязательно!!) командой.
+
+В качестве ответа приложите скриншоты консоли, где видно все введенные команды и их вывод, файл compose.yaml , скриншот portainer c задеплоенным компоузом.
+
+
+## Решение 5
+
+Для выполнения задания выполним следующие действия.
+
+Создадим директорию:
+
+```
+mkdir -p /tmp/netology/docker/task5
+cd /tmp/netology/docker/task5
+```
+
+Создадим файл compose.yaml:
+
+```
+cat > compose.yaml <<'EOF'
+version: "3"
+services:
+  portainer:
+    network_mode: host
+    image: portainer/portainer-ce:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+EOF
+```
+
+Создадим файл docker-compose.yaml:
+
+```
+cat > docker-compose.yaml <<'EOF'
+version: "3"
+services:
+  registry:
+    image: registry:2
+
+    ports:
+    - "5000:5000"
+EOF
+```
+
+![img](img/image41.png)
+
+Создадим Docker Compose проект и запустим контейнеры:
+
+```
+docker compose up -d
+```
+
+![img](img/image42.png)
+
+Выведем состояние контейнеров текущего Compose-проекта:
+
+```
+docker compose ps
+```
+
+![img](img/image43.png)
+
+Из вывода видим, что запустится только compose.yaml, то есть только portainer.
+По умолчанию Docker Compose ищет compose-файлы в приоритетном порядке. Если в директории есть compose.yaml, он использует его как основной файл, docker-compose.yaml сам автоматически дополнительно не подключается.
+
+
+Отредактируем содержимое файла compose.yaml следующим образом:
+
+```
+include:
+  - docker-compose.yaml
+
+services:
+  portainer:
+    network_mode: host
+    image: portainer/portainer-ce:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+```
+
+![img](img/image44.png)
+
+
+Снова запустим Compose-проект:
+
+```
+docker compose up -d
+```
+
+![img](img/image45.png)
+
+
+Проверим состояние контейнеров в проекте:
+
+```
+docker compose ps
+```
+
+Из вывода мы видим, что запущены оба сервиса ```portainer``` и ```registry```:
+
+![img](img/image46.png)
+
+Проверим доступность локального Registry:
+
+```
+curl http://127.0.0.1:5000/v2/
+```
+
+В ответ мы получим пустой JSON-объект, что означает, что локальный Docker Registry успешно запущен и Docker Registry API v2 доступен по порту 5000.
+
+![img](img/image47.png)
+
+
+Создадим новый тег для локального Registry:
+
+```
+docker tag custom-nginx:1.0.0 127.0.0.1:5000/custom-nginx:latest
+```
+
+Проверим, что тег появился:
+
+```
+docker images
+```
+
+![img](img/image48.png)
+
+Отправим образ в локальный Registry:
+
+```
+docker push 127.0.0.1:5000/custom-nginx:latest
+```
+
+![img](img/image49.png)
+
+Проверим локальный Registry:
+
+```
+curl http://127.0.0.1:5000/v2/_catalog
+```
+
+Увидим, что образ появился:
+
+![img](img/image50.png)
+
+Так же можно проверить список тиегов:
+
+```
+curl http://127.0.0.1:5000/v2/custom-nginx/tags/list
+```
+
+![img](img/image51.png)
+
+Теперь приступим к настройке Portainer.
+
+Создадим пользователя ```admin```:
+
+![img](img/image52.png)
+
+Выберем ```local environment```:
+
+![img](img/image53.png)
+
+Перейдём в Stasks и добавим compose из задания:
+
+![img](img/image54.png)
+
+Выполним deploy добавленного compose:
+
+![img](img/image55.png)
+
+![img](img/image56.png)
+
+Выполним inspect контейнера.
+
+Для этого перейдём в ораздел ```Containers```, выберем контейнер ```
+custom-nginx-stack-nginx-1``` и зайдём в него:
+
+![img](img/image57.png)
+
+Нажмём ```inspect```:
+
+![img](img/image58.png)
+
+Скриншот, необходимый по заданию:
+
+![img](img/image59.png)
+
+Проверим, что в каталоге ```/tmp/netology/docker/task5``` находятся оба файла манифеста:
+
+```
+ls -l
+```
+
+![img](img/image60.png)
+
+
+Удалим файл compose.yaml:
+
+```
+rm compose.yaml
+```
+
+![img](img/image61.png)
+
+Выполним запуск проекта:
+
+```
+docker compose up -d
+```
+
+В выводе видим предупреждение о том, что для проекта есть orphan containers — контейнеры, которые были созданы старой compose-конфигурацией, но теперь отсутствуют в текущем compose-файле.
+
+![img](img/image62.png)
+
+Выполним удаление orphan containers:
+
+```
+docker compose up -d --remove-orphans
+```
+
+![img](img/image63.png)
+
+Погасим compose-проект одной командой:
+
+```
+docker compose down
+```
+
+![img](img/image64.png)
+
+После удаления одного из compose-файлов Docker Compose увидел только оставшийся docker-compose.yaml, где описан только registry. Ранее созданный portainer больше не описан в текущей конфигурации, поэтому Docker Compose предупредил об orphan container.
+
+Выполним проверку состояния проекта:
+
+```
+docker compose ps
+```
+
+![img](img/image64.png)
+
+В выводе не увидим никаких запущеных контейнеров.
