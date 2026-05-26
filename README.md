@@ -151,4 +151,125 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
 docker build -f Dockerfile.python -t shvirtd-fastapi .
 ```
 
+![img](img/image8.png)
+
+Проверим список образов:
+
+```
+docker image ls
+```
+
+![img](img/image9.png)
+
+
+Запустим контейнер:
+
+```
+docker run -d --name fastapi-test -p 5000:5000 shvirtd-fastapi
+```
+
+Проверим состояние контейнера:
+
+```
+docker ps
+```
+
+![img](img/image10.png)
+
+Создадим файл ```compose.yaml``` следующего содержания:
+
+```
+include:
+  - proxy.yaml
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.python
+    image: shvirtd-fastapi
+    container_name: shvirtd-web
+    restart: always
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+    networks:
+      backend:
+        ipv4_address: 172.20.0.5
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    container_name: shvirtd-db
+    restart: always
+    env_file:
+      - .env
+    networks:
+      backend:
+        ipv4_address: 172.20.0.10
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
+  ```
+
+Запустим сборку Docker-образов, создание сети и томов Docker Compose, а также запуск контейнеров web, db, nginx и haproxy в фоновом режиме.
+
+```
+docker compose up -d --build
+```
+
+![img](img/image11.png)
+
+
+Проверим состояние контейнеров, запущенных через Docker Compose:
+
+```
+docker compose ps
+```
+
+В выводе подтвержден успешный запуск сервисов приложения и проброс необходимых сетевых портов:
+
+![img](img/image12.png)
+
+Проверим доступность веб-приложения через цепочку reverse proxy (nginx → haproxy → FastAPI):
+
+```
+curl http://127.0.0.1:8090
+```
+
+Полученный ответ подтверждает корректную работу приложения и взаимодействие контейнеров внутри Docker Compose инфраструктуры.
+
+![img](img/image13.png)
+
+Теперь переделаем сборку в в multistage-формате.
+
+Изменим содержание ```Dockerfile.python``` на:
+
+```
+FROM python:3.12-slim AS builder
+
+WORKDIR /install
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+
+FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY --from=builder /install /usr/local
+
+COPY main.py .
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
+```
 
