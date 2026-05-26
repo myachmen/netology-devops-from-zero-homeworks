@@ -42,6 +42,8 @@ Vagrant.configure("2") do |config|
   config.vm.network "forwarded_port", guest: 8090, host: 8090
   config.vm.network "forwarded_port", guest: 8080, host: 8080
   config.vm.network "forwarded_port", guest: 5000, host: 5000
+  
+  config.vm.synced_folder "D:/Homework/netology-devops-from-zero-homeworks", "/home/vagrant/homeworks"
 
   config.vm.provision "shell", inline: <<-SHELL
     apt-get update
@@ -126,4 +128,27 @@ git clone https://github.com/myachmen/shvirtd-example-python.git
 ```
 Remove-Item -Recurse -Force .\hw-docker-in-practice\.git
 ```
+
+В папке ```hw-docker-in-practice``` создадим файл ```Dockerfile.python``` следующего содержания:
+
+```
+FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
+```
+
+Подключимся к виртуальной машине и запустим сборку Docker-образа shvirtd-fastapi на основе файла Dockerfile.python из текущего каталога проекта.
+
+```
+docker build -f Dockerfile.python -t shvirtd-fastapi .
+```
+
 
