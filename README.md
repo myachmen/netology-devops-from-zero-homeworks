@@ -219,7 +219,7 @@ volumes:
   db_data:
   ```
 
-Запустим сборку Docker-образов, создание сети и томов Docker Compose, а также запуск контейнеров web, db, nginx и haproxy в фоновом режиме.
+Запустим сборку Docker-образа, создание сети и томов Docker Compose, а также запуск контейнеров web, db, nginx и haproxy в фоновом режиме.
 
 ```
 docker compose up -d --build
@@ -248,7 +248,7 @@ curl http://127.0.0.1:8090
 
 ![img](img/image13.png)
 
-Теперь переделаем сборку в в multistage-формате.
+Теперь переделаем сборку в multistage-формате.
 
 Изменим содержание ```Dockerfile.python``` на:
 
@@ -268,8 +268,71 @@ WORKDIR /app
 
 COPY --from=builder /install /usr/local
 
-COPY main.py .
+COPY . .
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
 ```
+В данном случае Dockerfile.python был переписан в multistage-формате. На первом этапе builder устанавливаются Python-зависимости, а на втором этапе создаётся финальный runtime-образ, в который копируются только установленные зависимости и файл приложения main.py.
 
+Остановим и удалим текущую инфраструктуру Compose:
+
+```
+docker compose down
+```
+
+![img](img/image14.png)
+
+Снова запустим сборку Docker-образа:
+
+```
+docker compose up -d --build
+```
+
+![img](img/image15.png)
+
+Проверим состояние контейнеров, запущенных через Docker Compose:
+
+```
+docker compose ps
+```
+
+![img](img/image16.png)
+
+Проверим доступность веб-приложения через цепочку reverse proxy (nginx → haproxy → FastAPI):
+
+![img](img/image17.png)
+
+Single-stage сборка создаёт Docker-образ, содержащий одновременно среду сборки и runtime-окружение приложения.
+Multistage сборка разделяет процесс на несколько этапов: отдельный этап сборки (builder) и финальный runtime-этап. В результате итоговый Docker-образ содержит только необходимые для запуска приложения файлы и зависимости.
+В рамках домашнего задания различие по функциональности между single-stage и multistage отсутствует, однако multistage подход позволяет уменьшить размер образа, повысить безопасность и ускорить доставку контейнеров в production-средах.
+
+
+Создадим файл .dockerignore.
+Для этого в папке ```hw-docker-in-practice``` создадим файл .dockerignore следующего содержания:
+
+```
+.git
+.gitignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env.local
+.venv/
+venv/
+.DS_Store
+.idea/
+.vscode/
+*.log
+schema.pdf
+```
+
+Повторим вышеописаный процес сборки и проверки:
+
+![img](img/image17.png)
+
+
+Теперь попробуем запустить web-приложение без использования docker, с помощью venv.
+
+Для этого сначала остановим инфраструктуру Docker-
