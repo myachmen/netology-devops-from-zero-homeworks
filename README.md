@@ -476,3 +476,266 @@ curl http://127.0.0.1:8090
 3. Соберите и залейте в него образ с python приложением из задания №1.
 4. Просканируйте образ на уязвимости.
 5. В качестве ответа приложите отчет сканирования.
+
+
+## Решение 2
+
+Для выполнения задания выполним следующие действия.
+
+Установим Yandex Cloud CLI на виртуальную машину:
+
+```
+curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+```
+
+![img](img/image27.png)
+
+
+Перезайдём в ssh-сессию и проверим, что Yandex Cloud CLI установлен:
+
+```
+exit
+vagrant ssh
+```
+
+```
+yc --version
+```
+
+Выполним инициализацию CLI:
+
+```
+yc init
+```
+
+![img](img/image28.png)
+
+В процессе инициализации потребуется указать OAuth token, который можно получить открыв ссылку, указанную в выводе команды инициализации в браузере.
+
+После указания токена ответим еще на несколько вопросов:
+
+![img](img/image29.png)
+
+Создадим Container Registry:
+
+```
+yc container registry create --name test
+```
+
+![img](img/image30.png)
+
+Настроим Docker для работы с Yandex Registry:
+
+```
+yc container registry configure-docker
+```
+
+и проверяем настройку:
+
+```
+cat ~/.docker/config.json
+```
+
+![img](img/image31.png)
+
+Тегируем локальный образ:
+
+```
+docker tag shvirtd-fastapi:latest cr.yandex/crpdjb042ijeirepo7lu/shvirtd-fastapi:latest
+```
+
+Проверим тег:
+
+```
+docker images
+```
+
+![img](img/image32.png)
+
+Загрузим образ в registry:
+
+```
+docker push cr.yandex/crpdjb042ijeirepo7lu/shvirtd-fastapi:latest
+```
+
+![img](img/image33.png)
+
+Проверим, что образ загрузился:
+
+```
+yc container image list --registry-name test
+```
+
+![img](img/image34.png)
+
+Просканируем образ на уязвимости:
+
+```
+yc container image scan crprjc1k240io3k7cnd6
+```
+
+После окончания сканирования будет выведен отчёт:
+
+![img](img/image35.png)
+
+
+
+## Задание 3
+
+1. Изучите файл "proxy.yaml"
+2. Создайте в репозитории с проектом файл compose.yaml. С помощью директивы "include" подключите к нему файл "proxy.yaml".
+3. Опишите в файле ```compose.yaml``` следующие сервисы:
+
+```web```. Образ приложения должен ИЛИ собираться при запуске compose из файла Dockerfile.python ИЛИ скачиваться из yandex cloud container registry(из задание №2 со *). Контейнер должен работать в bridge-сети с названием backend и иметь фиксированный ipv4-адрес 172.20.0.5. Сервис должен всегда перезапускаться в случае ошибок. Передайте необходимые ENV-переменные для подключения к Mysql базе данных по сетевому имени сервиса web
+
+```db```. image=mysql:8. Контейнер должен работать в bridge-сети с названием backend и иметь фиксированный ipv4-адрес 172.20.0.10. Явно перезапуск сервиса в случае ошибок. Передайте необходимые ENV-переменные для создания: пароля root пользователя, создания базы данных, пользователя и пароля для web-приложения.Обязательно используйте уже существующий .env file для назначения секретных ENV-переменных!
+
+2. Запустите проект локально с помощью docker compose , добейтесь его стабильной работы: команда ```curl -L http://127.0.0.1:8090``` должна возвращать в качестве ответа время и локальный IP-адрес. Если сервисы не стартуют воспользуйтесь командами: ```docker ps -a```  и ```docker logs <container_name>``` . Если вместо IP-адреса вы получаете информационную ошибку --убедитесь, что вы шлете запрос на порт ```8090```, а не 5000.
+
+3. Подключитесь к БД mysql с помощью команды docker exec -ti <имя_контейнера> mysql -uroot -p<пароль root-пользователя>(обратите внимание что между ключем -u и логином root нет пробела. это важно!!! тоже самое с паролем) . Введите последовательно команды (не забываем в конце символ ; ): show databases; use <имя вашей базы данных(по-умолчанию virtd, как это указано в .env)>; show tables; SELECT * from requests LIMIT 10;. Примечание: таблица в БД создается после первого поступившего запроса к приложению.
+
+4. Остановите проект. В качестве ответа приложите скриншот sql-запроса.
+
+
+## Решение 3
+
+Часть требований задания №3 была выполнена в процессе выполнения предыдущих заданий и отладки проекта. Ранее были настроены:
+
+ - Docker Compose конфигурация;
+ - подключение proxy.yaml через include;
+ - сервисы web и db;
+ - bridge-сеть backend со статическими IP-адресами;
+ - ENV-переменные для подключения к MySQL;
+ - запуск приложения через Docker Compose;
+ - проверка доступности приложения через curl http://127.0.0.1:8090.
+
+
+Теперь приступим к части, где требуется проверка работы MySQL.
+
+Зайдём в MySQL:
+
+```
+docker exec -ti shvirtd-db mysql -uroot -pYtReWq4321
+```
+
+![img](img/image36.png)
+
+Выполним необходимые команды:
+
+```
+show databases;
+use virtd;
+show tables;
+SELECT * from requests LIMIT 10;
+```
+
+![img](img/image37.png)
+
+Выйдем из MySQL:
+
+```
+exit
+```
+
+![img](img/image38.png)
+
+Остановим проект:
+
+```
+docker compose down
+```
+
+![img](img/image39.png)
+
+
+## Задание 4
+
+1. Запустите в Yandex Cloud ВМ (вам хватит 2 Гб Ram).
+2. Подключитесь к Вм по ssh и установите docker.
+3. Напишите bash-скрипт, который скачает ваш fork-репозиторий в каталог /opt и запустит проект целиком.
+4. Зайдите на сайт проверки http подключений, например(или аналогичный): ```https://check-host.net/check-http``` и запустите проверку вашего сервиса ```http://<внешний_IP-адрес_вашей_ВМ>:8090```. Таким образом трафик будет направлен в ingress-proxy. Трафик должен пройти через цепочки: Пользователь → Internet → Nginx → HAProxy → FastAPI(запись в БД) → HAProxy → Nginx → Internet → Пользователь
+5. (Необязательная часть) Дополнительно настройте remote ssh context к вашему серверу. Отобразите список контекстов и результат удаленного выполнения ```docker ps -a```
+6. Повторите SQL-запрос на сервере и приложите скриншот и ссылку на fork.
+
+## Решение 4
+
+С помощью web-консоли создадим виртуальную машину в Yandex Cloud:
+
+![img](img/image40.png)
+
+![img](img/image41.png)
+
+Установим Docker на созданной виртуальной машине:
+
+```
+sudo apt update
+sudo apt install -y ca-certificates curl git gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt update
+
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+Добавим пользователя в группу docker:
+
+```
+sudo usermod -aG docker yc-user
+```
+
+Переподключимся к виртуальной машине по ssh и проверим Docker:
+
+```
+docker --version
+docker compose version
+docker ps
+```
+
+![img](img/image42.png)
+
+Подготовим требуемый bash-скрипт следующего содержания:
+
+```
+#!/bin/bash
+
+set -e
+
+REPO_URL="https://github.com/myachmen/netology-devops-from-zero-homeworks.git"
+PROJECT_DIR="/opt/netology-devops-from-zero-homeworks"
+
+echo "=== Установка git ==="
+sudo apt update
+sudo apt install -y git
+
+echo "=== Клонирование репозитория ==="
+
+if [ -d "$PROJECT_DIR" ]; then
+    echo "Каталог уже существует, выполняем обновление"
+    cd "$PROJECT_DIR"
+    git pull
+else
+    sudo git clone -b hw-docker-in-practice "$REPO_URL" "$PROJECT_DIR"
+    sudo chown -R $USER:$USER "$PROJECT_DIR"
+fi
+
+echo "=== Переход в каталог проекта ==="
+cd "$PROJECT_DIR/hw-docker-in-practice"
+
+echo "=== Запуск docker compose ==="
+docker compose up -d --build
+
+echo "=== Проверка контейнеров ==="
+docker compose ps
+
+echo "=== Проверка приложения ==="
+curl http://127.0.0.1:8090
+
+echo "=== Готово ==="
+```
+
