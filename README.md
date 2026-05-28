@@ -1,4 +1,3 @@
-netplan ьм
 # Домашнее задание по теме "Практическое применение Docker" Ячмень Марк Викторович
 
 ## Задание 0
@@ -738,4 +737,28 @@ curl http://127.0.0.1:8090
 
 echo "=== Готово ==="
 ```
+
+С очередным коммитом отправим файл скрипта ```deploy.sh``` в репозиторий на GitHub, а затем скачаем его на виртуальную машину:
+
+```
+cd /tmp
+curl -L -o deploy.sh https://raw.githubusercontent.com/myachmen/netology-devops-from-zero-homeworks/hw-docker-in-practice/deploy.sh
+```
+
+![img](img/image43.png)
+
+Cделаем скрипт исполняемым:
+
+```
+chmod +x deploy.sh
+```
+
+Запустим скрипт:
+
+```
+./deploy.sh
+```
+
+![img](img/image43.png)
+
 
