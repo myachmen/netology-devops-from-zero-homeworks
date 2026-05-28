@@ -1,4 +1,4 @@
-
+netplan ьм
 # Домашнее задание по теме "Практическое применение Docker" Ячмень Марк Викторович
 
 ## Задание 0
@@ -330,9 +330,149 @@ schema.pdf
 
 Повторим вышеописаный процес сборки и проверки:
 
-![img](img/image17.png)
+![img](img/image18.png)
 
 
 Теперь попробуем запустить web-приложение без использования docker, с помощью venv.
 
-Для этого сначала остановим инфраструктуру Docker-
+Для этого сначала остановим compose-инфраструктуру:
+
+```
+docker compose down
+```
+
+![img](img/image19.png)
+
+
+Запустим только MySQL отдельным контейнером:
+
+```
+docker run -d --name mysql-venv-test -e MYSQL_ROOT_PASSWORD=YtReWq4321 -e MYSQL_DATABASE=virtd -e MYSQL_USER=app -e MYSQL_PASSWORD=QwErTy1234 -p 3306:3306 mysql:8.0
+```
+
+Проверим, что MySQL поднялся:
+
+```
+docker ps
+```
+
+![img](img/image20.png)
+
+
+Установим пакет ```python3-venv```:
+
+```
+sudo apt update
+sudo apt install -y python3-venv
+```
+
+Запустим Python-приложение без Docker, через venv:
+
+```
+python3 -m venv ~/venvs/shvirtd
+source ~/venvs/shvirtd/bin/activate
+pip install -r requirements.txt
+```
+
+![img](img/image21.png)
+
+![img](img/image22.png)
+
+Передадим приложению переменные окружения:
+
+```
+export DB_HOST=127.0.0.1
+export DB_NAME=virtd
+export DB_USER=app
+export DB_PASSWORD=QwErTy1234
+```
+
+Запустим FastAPI:
+
+```
+uvicorn main:app --host 0.0.0.0 --port 5000
+```
+
+![img](img/image23.png)
+
+Выполним проверку работы приложения.
+Откроем вторую ssh-сессию и в ней выполним curl запрос:
+
+```
+curl http://127.0.0.1:5000
+```
+
+Получим следующий вывод:
+
+![img](img/image24.png)
+
+При прямом обращении к FastAPI-приложению на порт 5000 приложение выводило предупреждение о неверном способе доступа. Это связано с тем, что приложение ожидает передачу IP-адреса клиента через reverse proxy (nginx/haproxy) с использованием заголовков X-Forwarded-For и X-Real-IP.
+При обращении через nginx на порт 8090 приложение корректно определяло IP-адрес клиента.
+
+Теперь добавим управление названием таблицы через ENV переменную.
+Сейчас таблица ```requests``` жёстко прописана в main.py. Нужно вынести её имя в переменную окружения.
+
+Остановим ```unicorn`` в первой ssh-сессии:
+
+```
+Ctrl + C
+```
+
+Остановим MySQL-контейнер:
+
+```
+docker stop mysql-venv-test
+docker rm mysql-venv-test
+```
+
+В файл ```.env``` добавим строку:
+
+```
+DB_TABLE="requests"
+```
+
+
+В файл ```main.py``` добавим переменную:
+
+```
+db_table = os.environ.get('DB_TABLE', 'requests')
+```
+
+Также требуется заменить все упоминания ```requests``` на ```{db_table}```:
+
+```
+CREATE TABLE IF NOT EXISTS {db_name}.{db_table} (
+```
+
+```
+query = INSERT INTO {db_table} (request_date, request_ip) VALUES (%s, %s)"
+
+query = SELECT id, request_date, request_ip FROM {db_table} ORDER BY id DESC LIMIT 50"
+```
+
+
+Пересоберём compose:
+
+```
+docker compose up -d --build
+```
+
+![img](img/image25.png)
+
+Проверим работу приложения:
+
+```
+curl http://127.0.0.1:8090
+```
+
+![img](img/image26.png)
+
+
+
+## Задание 2
+
+1. Создайте в yandex cloud container registry с именем "test" с помощью "yc tool" . Инструкция
+2. Настройте аутентификацию вашего локального docker в yandex container registry.
+3. Соберите и залейте в него образ с python приложением из задания №1.
+4. Просканируйте образ на уязвимости.
+5. В качестве ответа приложите отчет сканирования.
