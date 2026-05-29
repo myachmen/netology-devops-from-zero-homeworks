@@ -759,6 +759,64 @@ chmod +x deploy.sh
 ./deploy.sh
 ```
 
-![img](img/image43.png)
+![img](img/image44.png)
 
+![img](img/image45.png)
+
+Выполним проверку доступности приложения через сайт ```https://check-host.net/check-http```:
+
+![img](img/image46.png)
+
+Снова выполним SQL-запрос на сервере, для проверки того, что запросы от внешнего сайта попали в базу.
+Подключимся к MySQL:
+
+```
+docker exec -ti shvirtd-db mysql -uroot -p
+```
+
+![img](img/image47.png)
+
+В самой MySQL выполним команды:
+
+```
+show databases;
+use virtd;
+show tables;
+SELECT * FROM requests ORDER BY id DESC LIMIT 20;
+```
+
+![img](img/image48.png)
+
+В последних записях видем большое количество внешних IP адресов, с которых происходила проверка доступности.
+
+
+Ссылка на fork-репозиторий с выполненным заданием:
+
+https://github.com/myachmen/netology-devops-from-zero-homeworks/tree/hw-docker-in-practice/hw-docker-in-practice
+
+
+Теперь настроим Docker context:
+
+```
+docker context create yc-vm --docker "host=ssh://yc-user@111.88.254.122"
+```
+
+Проверим список контекстов:
+
+```
+docker context ls
+```
+
+![img](img/image49.png)
+
+
+Проверим удалённое выполнение команды:
+
+```
+docker --context yc-vm ps -a
+```
+
+![img](img/image50.png)
+
+Команда показала контейнеры, запущенные на удалённой VM в Yandex Cloud.
 
