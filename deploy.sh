@@ -26,10 +26,21 @@ cd "$PROJECT_DIR/hw-docker-in-practice"
 echo "=== Запуск docker compose ==="
 docker compose up -d --build
 
+echo "=== Ожидание запуска сервисов ==="
+sleep 15
+
 echo "=== Проверка контейнеров ==="
 docker compose ps
 
 echo "=== Проверка приложения ==="
-curl http://127.0.0.1:8090
+for i in {1..10}; do
+    if curl -f http://127.0.0.1:8090; then
+        echo
+        echo "Application is available"
+        break
+    fi
+    echo "Waiting for application..."
+    sleep 5
+done
 
 echo "=== Готово ==="
