@@ -986,20 +986,6 @@ docker images | grep terraform
 
 ![img](img/image58.png)
 
-Сохраним образ в файл через ```docker save```:
-
-```
-docker save hashicorp/terraform:latest -o terraform-image.tar
-```
-
-Проверим, что файл сохранился:
-
-```
-ls -lh terraform-image.tar
-```
-
-![img](img/image59.png)
-
 Установим ```dive```:
 
 ```
@@ -1019,6 +1005,30 @@ dive hashicorp/terraform:latest
 
 ![img](img/image66.png)
 
+Сохраним образ в файл через ```docker save```:
+
+```
+docker save hashicorp/terraform:latest -o terraform-image.tar
+```
+
+Проверим, что файл сохранился:
+
+```
+ls -lh terraform-image.tar
+```
+
+![img](img/image59.png)
+
+
+
+## Задание 6.1
+
+Добейтесь аналогичного результата, используя docker cp.
+Предоставьте скриншоты действий .
+
+## Решение 6.1
+
+
 Создадим контейнер:
 
 ```
@@ -1026,6 +1036,12 @@ docker create --name terraform-copy hashicorp/terraform:latest
 ```
 
 ![img](img/image67.png)
+
+
+
+
+
+
 
 Скопируем файл:
 
@@ -1044,28 +1060,6 @@ docker cp terraform-copy:/bin/terraform ~/terraform-bin/terraform
 ```
 
 ![img](img/image69.png)
-
-Удалим контейнер:
-
-```
-docker rm terraform-copy
-```
-
-
-
-## Задание 6.1
-
-Скачайте docker образ hashicorp/terraform:latest и скопируйте бинарный файл /bin/terraform на свою локальную машину, используя dive и docker save. Предоставьте скриншоты действий .
-
-## Решение 6.1
-
-
-
-Создадим контейнер из образа:
-
-```
-docker create --name terraform-copy hashicorp/terraform:latest
-```
 
 Проверим, что образ создался:
 
@@ -1103,6 +1097,13 @@ ls -lh ~/terraform-bin/terraform
 ```
 docker rm terraform-copy
 ```
+
+
+
+
+
+
+
 
 
 
