@@ -1009,8 +1009,55 @@ sudo apt install -y ./dive_0.13.1_linux_amd64.deb
 
 ![img](img/image64.png)
 
-Просмотрим образ через diveЖ
+Просмотрим образ через ```dive```:
 
+```
+dive hashicorp/terraform:latest
+```
+
+![img](img/image65.png)
+
+![img](img/image66.png)
+
+Создадим контейнер:
+
+```
+docker create --name terraform-copy hashicorp/terraform:latest
+```
+
+![img](img/image67.png)
+
+Скопируем файл:
+
+```
+mkdir -p ~/terraform-bin
+
+docker cp terraform-copy:/bin/terraform ~/terraform-bin/terraform
+```
+
+![img](img/image68.png)
+
+Проверим, что файл скопировался:
+
+```
+~/terraform-bin/terraform version
+```
+
+![img](img/image69.png)
+
+Удалим контейнер:
+
+```
+docker rm terraform-copy
+```
+
+
+
+## Задание 6.1
+
+Скачайте docker образ hashicorp/terraform:latest и скопируйте бинарный файл /bin/terraform на свою локальную машину, используя dive и docker save. Предоставьте скриншоты действий .
+
+## Решение 6.1
 
 
 
