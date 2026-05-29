@@ -820,3 +820,180 @@ docker --context yc-vm ps -a
 
 Команда показала контейнеры, запущенные на удалённой VM в Yandex Cloud.
 
+
+## Задание 5
+
+1. Напишите и задеплойте на вашу облачную ВМ bash скрипт, который произведет резервное копирование БД mysql в директорию "/opt/backup" с помощью запуска в сети "backend" контейнера из образа ```schnitzler/mysqldump``` при помощи ```docker run ...``` команды. Подсказка: "документация образа."
+2. Протестируйте ручной запуск
+3. Настройте выполнение скрипта раз в 1 минуту через cron, crontab или systemctl timer. Придумайте способ не светить логин/пароль в git!!
+4. Предоставьте скрипт, cron-task и скриншот с несколькими резервными копиями в "/opt/backup"
+
+## Решение 5
+
+На виртуальной машине в Yandex Cloud подготовим директорию для резервного копирования:
+
+```
+sudo mkdir -p /opt/backup
+sudo chown yc-user:yc-user /opt/backup
+```
+
+Создадим файл, в котором мы будем хранить учётные данные: 
+
+```
+mkdir -p ~/.backup
+nano ~/.backup/mysql.env
+```
+
+со следующим содержимым:
+
+```
+MYSQL_HOST=shvirtd-db
+MYSQL_DATABASE=virtd
+MYSQL_USER=root
+MYSQL_PASSWORD=YtReWq4321
+```
+
+![img](img/image51.png)
+
+Ограничим права на созданный файл:
+
+```
+chmod 600 ~/.backup/mysql.env
+```
+
+Создадим файл скрипта резервного копирования: 
+
+```
+nano ~/mysql_backup.sh
+```
+
+со следующим содержимым:
+
+```
+#!/bin/bash
+
+set -e
+
+source ~/.backup/mysql.env
+
+BACKUP_DIR="/opt/backup"
+DATE=$(date +"%Y%m%d_%H%M%S")
+BACKUP_FILE="$BACKUP_DIR/mysql_${DATE}.sql"
+TMP_FILE="${BACKUP_FILE}.tmp"
+
+docker run --rm \
+  --network hw-docker-in-practice_backend \
+  --entrypoint mysqldump \
+  -e MYSQL_PWD="$MYSQL_PASSWORD" \
+  schnitzler/mysqldump \
+  --host="$MYSQL_HOST" \
+  --user="$MYSQL_USER" \
+  "$MYSQL_DATABASE" \
+  > "$TMP_FILE"
+
+if [ -s "$TMP_FILE" ]; then
+    mv "$TMP_FILE" "$BACKUP_FILE"
+    echo "Backup created: $BACKUP_FILE"
+else
+    rm -f "$TMP_FILE"
+    echo "Backup failed: empty dump"
+    exit 1
+fi
+```
+
+Выдадим права на выполнение:
+
+```
+chmod +x ~/mysql_backup.sh
+```
+
+Проверим работу скрипта при запуске вручную:
+
+```
+~/mysql_backup.sh
+```
+
+![img](img/image52.png)
+
+Проверим, что файл бекапа создался и выведем содержимое файла:
+
+```
+ls -lh /opt/backup
+head -20 /opt/backup/mysql_*.sql
+```
+
+![img](img/image53.png)
+
+Настироим запуск скрипта раз в минуту:
+
+```
+crontab -e
+```
+
+Добавим строку:
+
+```
+* * * * * /home/yc-user/mysql_backup.sh >/dev/null 2>&1
+```
+
+Проверим:
+
+```
+crontab -l
+```
+
+![img](img/image54.png)
+
+![img](img/image55.png)
+
+Через несколько минут проверим директорию для бекапов и увидим, что бекапы выполнябтся стабильно раз в минуту.
+
+![img](img/image56.png)
+
+Что касается вопроса о том, чтобы не светить пароль в Git.
+Для исключения хранения чувствительных данных в репозитории Git логин и пароль от базы данных вынесены в отдельный конфигурационный файл ```~/.backup/mysql.env```.
+Скрипт резервного копирования не содержит учётных данных в явном виде и получает их из внешнего файла через команду:
+
+```
+source ~/.backup/mysql.env
+```
+
+Файл mysql.env расположен в домашнем каталоге пользователя на сервере и не входит в состав Git-репозитория, поэтому при публикации кода на GitHub учётные данные не раскрываются.
+
+
+
+## Задание 6
+
+Скачайте docker образ hashicorp/terraform:latest и скопируйте бинарный файл /bin/terraform на свою локальную машину, используя dive и docker save. Предоставьте скриншоты действий .
+
+## Решение 6
+
+Скачаем образ Terraform:
+
+```
+docker pull hashicorp/terraform:latest
+```
+
+![img](img/image57.png)
+
+Проверим, что образ скачался:
+
+```
+docker images | grep terraform
+```
+
+![img](img/image58.png)
+
+Сохраним образ в файл через ```docker save```:
+
+```
+docker save hashicorp/terraform:latest -o terraform-image.tar
+```
+
+Проверим, что файл сохранился:
+
+```
+ls -lh terraform-image.tar
+```
+
+![img](img/image59.png)
