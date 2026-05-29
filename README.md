@@ -1037,13 +1037,15 @@ docker create --name terraform-copy hashicorp/terraform:latest
 
 ![img](img/image67.png)
 
+Проверим, что контейнер создался:
 
+```
+docker ps -a | grep terraform-copy
+```
 
+![img](img/image60.png)
 
-
-
-
-Скопируем файл:
+Скопируем ```/bin/terraform``` из контейнера на машину:
 
 ```
 mkdir -p ~/terraform-bin
@@ -1056,41 +1058,19 @@ docker cp terraform-copy:/bin/terraform ~/terraform-bin/terraform
 Проверим, что файл скопировался:
 
 ```
+ls -lh ~/terraform-bin/terraform
+```
+
+![img](img/image62.png) 
+
+
+Проверим работу Terraform:
+
+```
 ~/terraform-bin/terraform version
 ```
 
 ![img](img/image69.png)
-
-Проверим, что образ создался:
-
-```
-docker ps -a | grep terraform-copy
-```
-
-![img](img/image60.png)
-
-Скопируем ```/bin/terraform``` из контейнера на машину:
-
-```
-mkdir -p ~/terraform-bin
-docker cp terraform-copy:/bin/terraform ~/terraform-bin/terraform
-```
-
-Проверим, что файл скопировался:
-
-```
-ls -lh ~/terraform-bin/terraform
-```
-
-![img](img/image62.png)
-
-Проверим, что бинарный файл работает:
-
-```
-~/terraform-bin/terraform version
-```
-
-![img](img/image63.png)
 
 Удалиv временный контейнер:
 
