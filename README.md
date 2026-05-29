@@ -962,6 +962,8 @@ source ~/.backup/mysql.env
 
 
 
+
+
 ## Задание 6
 
 Скачайте docker образ hashicorp/terraform:latest и скопируйте бинарный файл /bin/terraform на свою локальную машину, используя dive и docker save. Предоставьте скриншоты действий .
@@ -997,3 +999,63 @@ ls -lh terraform-image.tar
 ```
 
 ![img](img/image59.png)
+
+Установим ```dive```:
+
+```
+wget --no-check-certificate https://github.com/wagoodman/dive/releases/download/v0.13.1/dive_0.13.1_linux_amd64.deb
+sudo apt install -y ./dive_0.13.1_linux_amd64.deb
+```
+
+![img](img/image64.png)
+
+Просмотрим образ через diveЖ
+
+
+
+
+Создадим контейнер из образа:
+
+```
+docker create --name terraform-copy hashicorp/terraform:latest
+```
+
+Проверим, что образ создался:
+
+```
+docker ps -a | grep terraform-copy
+```
+
+![img](img/image60.png)
+
+Скопируем ```/bin/terraform``` из контейнера на машину:
+
+```
+mkdir -p ~/terraform-bin
+docker cp terraform-copy:/bin/terraform ~/terraform-bin/terraform
+```
+
+Проверим, что файл скопировался:
+
+```
+ls -lh ~/terraform-bin/terraform
+```
+
+![img](img/image62.png)
+
+Проверим, что бинарный файл работает:
+
+```
+~/terraform-bin/terraform version
+```
+
+![img](img/image63.png)
+
+Удалиv временный контейнер:
+
+```
+docker rm terraform-copy
+```
+
+
+
