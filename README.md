@@ -1019,6 +1019,53 @@ ls -lh terraform-image.tar
 
 ![img](img/image59.png)
 
+Распакуем архив:
+
+```
+mkdir -p terraform-image
+tar -xf terraform-image.tar -C terraform-image
+```
+
+Просмотрим содержимое распакованного образа:
+
+```
+find terraform-image -maxdepth 3 -type f | head
+```
+
+Найдём слой, внутри которого есть ```bin/terraform```:
+
+```
+find terraform-image -type f -exec sh -c 'tar -tf "$1" 2>/dev/null | grep -q "^bin/terraform$" && echo "$1"' _ {} \;
+```
+
+![img](img/image70.png)
+
+Сохраним найденный слой в переменную:
+
+```
+LAYER=$(find terraform-image -type f -exec sh -c 'tar -tf "$1" 2>/dev/null | grep -q "^bin/terraform$" && echo "$1"' _ {} \; | head -n 1)
+echo $LAYER
+```
+
+![img](img/image71.png)
+
+
+Извлечём бинарник из найденного слоя:
+
+```
+mkdir -p terraform-from-tar
+tar -xf "$LAYER" -C terraform-from-tar bin/terraform
+```
+
+Провериv, что файл найден и работает:
+
+```
+ls -lh terraform-from-tar/bin/terraform
+chmod +x terraform-from-tar/bin/terraform
+./terraform-from-tar/bin/terraform version
+```
+
+![img](img/image72.png)
 
 
 ## Задание 6.1
