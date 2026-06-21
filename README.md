@@ -1,45 +1,25 @@
-![GitHub](https://img.shields.io/badge/GitHub-Repository-black)
-![Course](https://img.shields.io/badge/Course-DevOps-blue)
-![Platform](https://img.shields.io/badge/Platform-Netology-green)
+# Домашнее задание по теме "Основы Terraform. Yandex Cloud" Ячмень Марк Викторович
+
+## Задание 1
+
+В качестве ответа всегда полностью прикладывайте ваш terraform-код в git. Убедитесь что ваша версия Terraform ~>1.12.0
+
+1. Изучите проект. В файле variables.tf объявлены переменные для Yandex provider.
+2. Создайте сервисный аккаунт и ключ. service_account_key_file.
+3. Сгенерируйте новый или используйте свой текущий ssh-ключ. Запишите его открытую(public) часть в переменную vms_ssh_public_root_key.
+4. Инициализируйте проект, выполните код. Исправьте намеренно допущенные синтаксические ошибки. Ищите внимательно, посимвольно. Ответьте, в чём заключается их суть.
+5. Подключитесь к консоли ВМ через ssh и выполните команду  curl ifconfig.me. Примечание: К OS ubuntu "out of a box, те из коробки" необходимо подключаться под пользователем ubuntu: "ssh ubuntu@vm_ip_address". Предварительно убедитесь, что ваш ключ добавлен в ssh-агент: eval $(ssh-agent) && ssh-add Вы познакомитесь с тем как при создании ВМ создать своего пользователя в блоке metadata в следующей лекции.;
+6. Ответьте, как в процессе обучения могут пригодиться параметры preemptible = true и core_fraction=5 в параметрах ВМ.
+В качестве решения приложите:
+
+ - скриншот ЛК Yandex Cloud с созданной ВМ, где видно внешний ip-адрес;
+ - скриншот консоли, curl должен отобразить тот же внешний ip-адрес;
+ - ответы на вопросы.
+
+## Решение 1
+
+Для выполнения задания выполним следующие действия.
 
 
 
-# Домашние задания по курсу "Devops-инженер с нуля: расширенный курс" от Нетологии
 
-## Модуль "IT-системы и операционная система Linux" [сертификат](Electronic_certificate/SLINA-51-9785269.pdf)
-
-- [Архитектура компьютера. Операционная система](Materials/Computer_architecture_Operating_system.pdf) ([docx](Materials/Computer_architecture_Operating_system.docx))
-- [Знакомство с операционной системой Linux](Materials/Introduction_to_the_Linux_operating_system.pdf) ([docx](Materials/Introduction_to_the_Linux_operating_system.docx))
-- [Основы работы в терминалe ОС Linux](Materials/Basics_of_working_in_the_Linux_OS_terminal.pdf) ([docx](Materials/Basics_of_working_in_the_Linux_OS_terminal.docx))
-
-## Модуль "Операционная система Linux" [сертификат](Electronic_certificate/SLINB-51-9785269.pdf)
-
-- [Процессы, управление процессами](Materials/Linux_operating_system/Processes_process_management.pdf) ([docx](Materials/Linux_operating_system/Processes_process_management.docx))
-- [Дисковые системы](Materials/Linux_operating_system/Disk_systems.pdf) ([docx](Materials/Linux_operating_system/Disk_systems.docx))
-
-## Модуль "Администрирование операционной системы Linux" [сертификат](Electronic_certificate/)
-
-## Модуль "Программирование на Bash" [сертификат](Electronic_certificate/)
-
-## Модуль "Сеть, сетевые протоколы" [сертификат](Electronic_certificate/)
-
-## Модуль "Виртуализация" [сертификат](Electronic_certificate/)
-
-## Модуль "Автоматизация и CI/СD" [сертификат](Electronic_certificate/)
-
-## Модуль "Мониторинг" [сертификат](Electronic_certificate/SLINA-51-9785269.pdf)
-
-## Модуль "Отказоустойчивость" [сертификат](Electronic_certificate/)
-
-## Модуль "Системы хранения и передачи данных" [сертификат](Electronic_certificate/)
-
-## Модуль "Реляционные базы данных и администрирование баз данных" [сертификат](Electronic_certificate/)
-
-## Модуль "Информационная безопасность" [сертификат](Electronic_certificate/)
-
-
-## Модуль "Системы управления версиями" [сертификат](Electronic_certificate/)
-
-- [Системы контроля версий](../../tree/hw-Version_control_systems)
-- [Основы Git](../../tree/hw-Git_fundamentals)
-- [Инструменты Git](../../tree/hw-Git_tools)
