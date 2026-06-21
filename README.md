@@ -20,6 +20,95 @@
 
 Для выполнения задания выполним следующие действия.
 
+Скопируем исходники задания из ```ter-homeworks/02/src``` в локальную папку:
 
+```
+cd D:\Homework\netology-devops-from-zero-homeworks
 
+git clone https://github.com/netology-code/ter-homeworks.git D:\Homework\ter-homeworks-temp
 
+Copy-Item -Path D:\Homework\ter-homeworks-temp\02\src\* -Destination D:\Homework\netology-devops-from-zero-homeworks\terraform -Recurse -Force
+```
+![img](img/image1.png)
+
+Создадим сервисный аккаунт в Yandex Cloud:
+
+```
+yc iam service-account create --name terraform-sa
+```
+
+![img](img/image2.png)
+
+Получим ```ID``` созданного сервисного аккаунта:
+
+```
+yc iam service-account get terraform-sa
+```
+
+![img](img/image3.png)
+
+Выдадитм права сервисному аккаунту:
+
+```
+yc resource-manager folder add-access-binding b1gi86cp8m9talsp0tsr --role editor --subject serviceAccount:ajeutaso4967kahusiro
+```
+
+![img](img/image4.png)
+
+Создадим JSON-ключ:
+
+```
+yc iam key create --service-account-name terraform-sa --output authorized_key.json
+```
+
+![img](img/image5.png)
+
+Внесём исправления в файл ```providers.tf```.
+Заменим строку:
+
+```
+service_account_key_file = file("~/authorized_key.json")
+```
+
+на
+
+```
+service_account_key_file = file("${path.module}/authorized_key.json")
+```
+
+![img](img/image6.png)
+
+Добавим ключ в файл ```.gitignore```.  Добавим в файл строку:
+
+```
+authorized_key.json
+```
+
+![img](img/image7.png)
+
+Посмотрим публичный  ключ:
+
+```
+Get-Content $env:USERPROFILE\.ssh\id_ed25519.pub
+```
+![img](img/image8.png)
+
+Создадим файл ```personal.auto.tfvars``` со следующим содержимым:
+
+```
+cloud_id  = "b1gctutkrnslve8437ea"
+folder_id = "b1gi86cp8m9talsp0tsr"
+
+vms_ssh_root_key = "содержимое ключа"
+```
+
+![img](img/image9.png)
+
+Проверим Terraform:
+
+```
+terraform init
+terraform validate
+```
+
+![img](img/image10.png)
