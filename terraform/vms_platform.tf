@@ -18,6 +18,7 @@ variable "vm_web_platform_id" {
   description = "Web VM platform ID"
 }
 
+/*
 variable "vm_web_cores" {
   type        = number
   default     = 2
@@ -35,6 +36,7 @@ variable "vm_web_core_fraction" {
   default     = 5
   description = "Web VM guaranteed CPU fraction"
 }
+*/
 
 ###db vm vars
 
@@ -62,23 +64,25 @@ variable "vm_db_cidr" {
   description = "DB subnet CIDR"
 }
 
+/*
 variable "vm_db_cores" {
   type        = number
   default     = 2
   description = "DB VM CPU cores"
 }
 
-variable "vm_db_memory" {
+# variable "vm_db_memory" {
   type        = number
   default     = 2
   description = "DB VM RAM in GB"
 }
 
-variable "vm_db_core_fraction" {
+# variable "vm_db_core_fraction" {
   type        = number
   default     = 20
   description = "DB VM guaranteed CPU fraction"
 }
+*/
 
 variable "vm_project_prefix" {
   type        = string
@@ -108,4 +112,28 @@ variable "vm_db_role" {
   type        = string
   default     = "db"
   description = "DB VM role"
+}
+
+variable "vms_resources" {
+  type = map(object({
+    cores         = number
+    memory        = number
+    core_fraction = number
+  }))
+
+  default = {
+    web = {
+      cores         = 2
+      memory        = 1
+      core_fraction = 5
+    }
+
+    db = {
+      cores         = 2
+      memory        = 2
+      core_fraction = 20
+    }
+  }
+
+  description = "VM resources configuration"
 }

@@ -28,6 +28,17 @@ variable "vpc_name" {
   description = "VPC network & subnet name"
 }
 
+variable "metadata" {
+  type = map(string)
+
+  default = {
+    serial-port-enable = "1"
+    ssh-keys           = "<your_ssh_ed25519_key>"
+  }
+
+  description = "Common metadata for all VMs"
+}
+
 ###ssh vars
 
 variable "vms_ssh_root_key" {

@@ -621,3 +621,187 @@ terraform plan
 
 
 Видим, что никаких изменений в проекте не появилось.
+
+
+
+## Задание 6
+
+1. Вместо использования трёх переменных ".._cores",".._memory",".._core_fraction" в блоке resources {...}, объедините их в единую map-переменную vms_resources и внутри неё конфиги обеих ВМ в виде вложенного map(object).
+
+```
+пример из terraform.tfvars:
+vms_resources = {
+  web={
+    cores=2
+    memory=2
+    core_fraction=5
+    hdd_size=10
+    hdd_type="network-hdd"
+    ...
+  },
+  db= {
+    cores=2
+    memory=4
+    core_fraction=20
+    hdd_size=10
+    hdd_type="network-ssd"
+    ...
+  }
+}
+```
+
+2. Создайте и используйте отдельную map(object) переменную для блока metadata, она должна быть общая для всех ваших ВМ.
+
+```
+пример из terraform.tfvars:
+metadata = {
+  serial-port-enable = 1
+  ssh-keys           = "ubuntu:ssh-ed25519 AAAAC..."
+}
+```
+
+3. Найдите и закоментируйте все, более не используемые переменные проекта.
+
+4. Проверьте terraform plan. Изменений быть не должно.
+
+## Решение 6
+
+Для выполнения задания выполним следующие действия.
+
+Добавим в файл ```vms_platform.tf``` новую переменную:
+
+```
+variable "vms_resources" {
+  type = map(object({
+    cores         = number
+    memory        = number
+    core_fraction = number
+  }))
+
+  default = {
+    web = {
+      cores         = 2
+      memory        = 1
+      core_fraction = 5
+    }
+
+    db = {
+      cores         = 2
+      memory        = 2
+      core_fraction = 20
+    }
+  }
+
+  description = "VM resources configuration"
+}
+```
+
+Добавим в файл ```variables.tf``` общую переменную:
+
+```
+variable "metadata" {
+  type = map(string)
+
+  default = {
+    serial-port-enable = "1"
+    ssh-keys           = "<your_ssh_ed25519_key>"
+  }
+
+  description = "Common metadata for all VMs"
+}
+```
+
+Добавим в файл ```personal.auto.tfvars``` следующий код:
+
+```
+metadata = {
+  serial-port-enable = "1"
+  ssh-keys           = "ubuntu:ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINDwkG+Ddt5Lr+RLsnZFWrJqUccJWIW0T6jEeRrvhYgt kl-yachmen@yachmen-nb"
+}
+```
+
+В файле ```main.tf``` заменним блоки ```resources```.
+Для ```web```:
+
+```
+resources {
+  cores         = var.vms_resources.web.cores
+  memory        = var.vms_resources.web.memory
+  core_fraction = var.vms_resources.web.core_fraction
+}
+```
+
+
+Для ```DB```:
+
+```
+resources {
+  cores         = var.vms_resources.db.cores
+  memory        = var.vms_resources.db.memory
+  core_fraction = var.vms_resources.db.core_fraction
+}
+```
+
+В этом же файле заменим оба блока ```metadata``` на:
+
+```
+metadata = var.metadata
+```
+
+В файле ```vms_platform.tf``` закомментируем следующие строки:
+
+```
+/*
+variable "vm_web_cores" {
+  type        = number
+  default     = 2
+  description = "Web VM CPU cores"
+}
+
+variable "vm_web_memory" {
+  type        = number
+  default     = 1
+  description = "Web VM RAM in GB"
+}
+
+variable "vm_web_core_fraction" {
+  type        = number
+  default     = 5
+  description = "Web VM guaranteed CPU fraction"
+}
+*/
+
+/*
+variable "vm_db_cores" {
+  type        = number
+  default     = 2
+  description = "DB VM CPU cores"
+}
+
+# variable "vm_db_memory" {
+  type        = number
+  default     = 2
+  description = "DB VM RAM in GB"
+}
+
+# variable "vm_db_core_fraction" {
+  type        = number
+  default     = 20
+  description = "DB VM guaranteed CPU fraction"
+}
+*/
+```
+
+
+Выполним проверку проекта:
+
+```
+terraform fmt
+terraform validate
+terraform plan
+```
+
+![img](img/image31.png)
+
+
+Снова видим, что не требуется внесения никаких изменений, как и положено по заданию.
