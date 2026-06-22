@@ -152,6 +152,14 @@ terraform validate
 
 ![img](img/image12.png)
 
+Создадим файл ```data.tf``` следующего содержания:
+
+```
+data "yandex_compute_image" "ubuntu" {
+  family = "ubuntu-2204-lts"
+}
+```
+
 
 Создаим файл ```for_each-vm.tf``` для двух ВМ через ```for_each``` следующего содержания:
 
@@ -173,7 +181,7 @@ resource "yandex_compute_instance" "db" {
 
   boot_disk {
     initialize_params {
-      image_id = "fd8emvfmfoaordspe1jr"
+      image_id = data.yandex_compute_image.ubuntu.id
       size     = each.value.disk_volume
     }
   }
@@ -248,7 +256,7 @@ resource "yandex_compute_instance" "web" {
 
   boot_disk {
     initialize_params {
-      image_id = "fd8emvfmfoaordspe1jr"
+      image_id = data.yandex_compute_image.ubuntu.id
       size     = 5
     }
   }
@@ -334,7 +342,7 @@ resource "yandex_compute_instance" "storage" {
 
   boot_disk {
     initialize_params {
-      image_id = "fd8emvfmfoaordspe1jr"
+      image_id = data.yandex_compute_image.ubuntu.id
       size     = 5
     }
   }
