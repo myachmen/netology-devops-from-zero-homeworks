@@ -1,45 +1,12 @@
-![GitHub](https://img.shields.io/badge/GitHub-Repository-black)
-![Course](https://img.shields.io/badge/Course-DevOps-blue)
-![Platform](https://img.shields.io/badge/Platform-Netology-green)
+# Домашнее задание по теме "Управляющие конструкции в коде Terraform" Ячмень Марк Викторович
 
+## Задание 1
 
+1. Изучите проект.
+2. Инициализируйте проект, выполните код.
 
-# Домашние задания по курсу "Devops-инженер с нуля: расширенный курс" от Нетологии
+Приложите скриншот входящих правил «Группы безопасности» в ЛК Yandex Cloud .
 
-## Модуль "IT-системы и операционная система Linux" [сертификат](Electronic_certificate/SLINA-51-9785269.pdf)
+## Решение 1
 
-- [Архитектура компьютера. Операционная система](Materials/Computer_architecture_Operating_system.pdf) ([docx](Materials/Computer_architecture_Operating_system.docx))
-- [Знакомство с операционной системой Linux](Materials/Introduction_to_the_Linux_operating_system.pdf) ([docx](Materials/Introduction_to_the_Linux_operating_system.docx))
-- [Основы работы в терминалe ОС Linux](Materials/Basics_of_working_in_the_Linux_OS_terminal.pdf) ([docx](Materials/Basics_of_working_in_the_Linux_OS_terminal.docx))
-
-## Модуль "Операционная система Linux" [сертификат](Electronic_certificate/SLINB-51-9785269.pdf)
-
-- [Процессы, управление процессами](Materials/Linux_operating_system/Processes_process_management.pdf) ([docx](Materials/Linux_operating_system/Processes_process_management.docx))
-- [Дисковые системы](Materials/Linux_operating_system/Disk_systems.pdf) ([docx](Materials/Linux_operating_system/Disk_systems.docx))
-
-## Модуль "Администрирование операционной системы Linux" [сертификат](Electronic_certificate/)
-
-## Модуль "Программирование на Bash" [сертификат](Electronic_certificate/)
-
-## Модуль "Сеть, сетевые протоколы" [сертификат](Electronic_certificate/)
-
-## Модуль "Виртуализация" [сертификат](Electronic_certificate/)
-
-## Модуль "Автоматизация и CI/СD" [сертификат](Electronic_certificate/)
-
-## Модуль "Мониторинг" [сертификат](Electronic_certificate/SLINA-51-9785269.pdf)
-
-## Модуль "Отказоустойчивость" [сертификат](Electronic_certificate/)
-
-## Модуль "Системы хранения и передачи данных" [сертификат](Electronic_certificate/)
-
-## Модуль "Реляционные базы данных и администрирование баз данных" [сертификат](Electronic_certificate/)
-
-## Модуль "Информационная безопасность" [сертификат](Electronic_certificate/)
-
-
-## Модуль "Системы управления версиями" [сертификат](Electronic_certificate/)
-
-- [Системы контроля версий](../../tree/hw-Version_control_systems)
-- [Основы Git](../../tree/hw-Git_fundamentals)
-- [Инструменты Git](../../tree/hw-Git_tools)
+Для выполнения задания выполним следующие действия.
