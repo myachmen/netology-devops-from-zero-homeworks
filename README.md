@@ -173,4 +173,93 @@ curl -I http://localhost:8111
 
 Подключимся ук созданной виртуальной машине ```teamcity-agent``` и выполним те же шаги, что и на первой виртуальной машине (установка обновлений и установка Docker).
 
+Перед установкой контейнера Teamcity Agent подготовим структуру каталогов:
 
+```
+sudo mkdir -p /opt/teamcity-agent/{conf,logs,work,temp,system}
+sudo chown -R ubuntu:ubuntu /opt/teamcity-agent
+```
+
+Подготовим файл ```compose.yaml``` следующего содержания:
+
+```
+services:
+  teamcity-agent:
+    image: jetbrains/teamcity-agent:latest
+    container_name: teamcity-agent
+
+    restart: unless-stopped
+
+    environment:
+      SERVER_URL: "http://10.130.0.8:8111"
+      AGENT_NAME: "yc-agent"
+
+    volumes:
+      - /opt/teamcity-agent/conf:/data/teamcity_agent/conf
+      - /opt/teamcity-agent/logs:/opt/buildagent/logs
+      - /opt/teamcity-agent/work:/opt/buildagent/work
+      - /opt/teamcity-agent/temp:/opt/buildagent/temp
+      - /opt/teamcity-agent/system:/opt/buildagent/system
+
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    privileged: true
+```
+    
+Запустим контейнер Teamcity Agent:
+
+```
+docker compose up -d
+```
+
+Проверим состояние контейнера:
+
+```
+docker compose ps
+```
+
+![img](img/image19.png)
+
+Проверим на TeamCity Server, что агент виден:
+
+![img](img/image20.png)
+
+Авторизуем агента нажав кнопку ```Authorize...```:
+
+![img](img/image21.png)
+
+Проверим, что агент готов к работе, для этого перейдём на вкладку ```Parameters```:
+
+![img](img/image22.png)
+
+Создадим fork учебного проекта:
+
+![img](img/image23.png)
+
+Создадим новый проект в TeamCity:
+
+![img](img/image24.png)
+
+Подключим к проекту репозиторий:
+
+![img](img/image25.png)
+
+![img](img/image26.png)
+
+![img](img/image27.png)
+
+Откроем созданный проект:
+
+![img](img/image28.png)
+
+Создадим Build step:
+
+![img](img/image29.png)
+
+![img](img/image30.png)
+
+Запустим первую сборку, нажав кнопку ```Run``` в интерфейсе TeamCity Server:
+
+![img](img/image31.png)
+
+Первая тестовая сборка проекта выполнена успешно. TeamCity получил исходный код из репозитория GitHub, передал задачу агенту ```yc-agent```, выполнил Maven-команду clean test и успешно завершил сборку. Все 5 автоматических тестов были пройдены без ошибок.
