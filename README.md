@@ -236,6 +236,138 @@ docker compose ps
 
 ![img](img/image23.png)
 
+Перейдём к настройке виртуальной машины, на которой будет устанолвлен Nexus.
+
+Создадим еще одну виртуальную машину в Yandex Cloud по аналогии с предыдущими.
+
+![img](img/image33.png)
+
+После установки всех текущих обновлений на виртуальную машину, установим Ansible:
+
+```
+sudo apt update
+sudo apt install -y ansible git
+```
+
+Проверим, что Ansible установился:
+
+```
+ansible --version
+ansible-playbook --version
+```
+
+![img](img/image34.png)
+
+Склонируем репозиторий:
+
+```
+git clone -b MNT-video --depth 1 https://github.com/netology-code/mnt-homeworks.git
+```
+
+Отредактируем содержимое файла ```inventory/cicd/hosts.yml```. Внесём в него данные о хосте с установленным Ansible и пропишем переменные:
+
+```
+---
+all:
+  hosts:
+    nexus-01:
+      ansible_host: 127.0.0.1
+
+  children:
+    nexus:
+      hosts:
+        nexus-01:
+
+  vars:
+    ansible_connection: local
+    ansible_user: ubuntu
+    ansible_python_interpreter: /usr/bin/python3
+```
+
+Исправим задау по установке Java в файле ```site.yml```.
+Заменим блок:
+
+```
+- name: Install JDK
+  become: true
+  package:
+    name: [java-1.8.0-openjdk, java-1.8.0-openjdk-devel]
+    state: present
+```
+
+на
+
+```
+- name: Install JDK
+  become: true
+  ansible.builtin.apt:
+    name: openjdk-8-jdk
+    state: present
+    update_cache: true
+```
+
+Выполним синтаксическую проверку файла:
+
+```
+ansible-playbook -i inventory/cicd/hosts.yml site.yml --syntax-check
+```
+
+![img](img/image35.png)
+
+Запустим playbook:
+
+```
+ansible-playbook -i inventory/cicd/hosts.yml site.yml
+```
+
+![img](img/image36.png)
+
+![img](img/image37.png)
+
+Проверим сервис ```nexus```:
+
+```
+systemctl status nexus
+```
+
+![img](img/image38.png)
+
+Проверим порт:
+
+```
+ss -tlnp | grep 8081
+```
+
+![img](img/image39.png)
+
+Проверим работу сервиса в браузере:
+
+![img](img/image40.png)
+
+## Основная часть
+
+1. Создайте новый проект в teamcity на основе fork.
+2. Сделайте autodetect конфигурации.
+3. Сохраните необходимые шаги, запустите первую сборку master.
+4. Поменяйте условия сборки: если сборка по ветке `master`, то должен происходит `mvn clean deploy`, иначе `mvn clean test`.
+5. Для deploy будет необходимо загрузить [settings.xml](./teamcity/settings.xml) в набор конфигураций maven у teamcity, предварительно записав туда креды для подключения к nexus.
+6. В pom.xml необходимо поменять ссылки на репозиторий и nexus.
+7. Запустите сборку по master, убедитесь, что всё прошло успешно и артефакт появился в nexus.
+8. Мигрируйте `build configuration` в репозиторий.
+9. Создайте отдельную ветку `feature/add_reply` в репозитории.
+10. Напишите новый метод для класса Welcomer: метод должен возвращать произвольную реплику, содержащую слово `hunter`.
+11. Дополните тест для нового метода на поиск слова `hunter` в новой реплике.
+12. Сделайте push всех изменений в новую ветку репозитория.
+13. Убедитесь, что сборка самостоятельно запустилась, тесты прошли успешно.
+14. Внесите изменения из произвольной ветки `feature/add_reply` в `master` через `Merge`.
+15. Убедитесь, что нет собранного артефакта в сборке по ветке `master`.
+16. Настройте конфигурацию так, чтобы она собирала `.jar` в артефакты сборки.
+17. Проведите повторную сборку мастера, убедитесь, что сбора прошла успешно и артефакты собраны.
+18. Проверьте, что конфигурация в репозитории содержит все настройки конфигурации из teamcity.
+19. В ответе пришлите ссылку на репозиторий.
+
+## Выполнение основной части
+
 Создадим новый проект в TeamCity:
 
 ![img](img/image24.png)
@@ -263,3 +395,97 @@ docker compose ps
 ![img](img/image31.png)
 
 Первая тестовая сборка проекта выполнена успешно. TeamCity получил исходный код из репозитория GitHub, передал задачу агенту ```yc-agent```, выполнил Maven-команду clean test и успешно завершил сборку. Все 5 автоматических тестов были пройдены без ошибок.
+
+Отредактируем ```Maven test```.
+Добавим условие:
+
+![img](img/image41.png)
+
+![img](img/image42.png)
+
+Добавим еще один шаг сборки ```Maven deploy```:
+
+![img](img/image43.png)
+
+Добавим условие:
+
+![img](img/image44.png)
+
+В итоге получилось два шага сборки:
+
+![img](img/image45.png)
+
+Приступим к настройке Nexus.
+
+Проверим наличие необходимых репозиториев:
+
+![img](img/image46.png)
+
+Подготовим файл ```settings.xml```. 
+Проверим, что в секции:
+
+```
+<server>
+      <id>nexus</id>
+      <username>admin</username>
+      <password>admin123</password>
+    </server>
+
+```
+
+указаны верные учётные данные.
+
+Загрузим файл ```settings.xml``` в TeamCity.
+
+![img](img/image47.png)
+
+
+Перейдём в раздел ```Build Steps``` и в шаге ```Maven deploy``` выберем файл ```settings.xml```:
+
+![img](img/image48.png)
+
+Приступим к подготовке файла ```pom.xml```.
+Склонируем fork репозитория:
+
+```
+git clone https://github.com/myachmen/example-teamcity.git
+```
+
+Заменим адрес Nexus сервера, который указан в файле на адрес нашего Nexus сервера:
+
+```
+sed -i 's#http://51.250.13.64:8081/repository/maven-releases#http://10.130.0.25:8081/repository/maven-releases#' pom.xml
+```
+
+Запушим изменения в репозиторий на GitHub:
+
+```
+git status
+git add pom.xml
+git commit -m "Update Nexus repository URL"
+git push origin master
+```
+
+![img](img/image49.png)
+
+![img](img/image50.png)
+
+Запустим сборку ветки ```master``` и проверим публикацию артефакта в Nexus.
+
+![img](img/image51.png)
+
+Посмотрим на лог сборки:
+
+![img](img/image52.png)
+
+и увидим, что шаг ```Maven test``` пропущен:
+
+![img](img/image53.png)
+
+Так же мы видим, что артефакт загружен на Nexus:
+
+![img](img/image54.png)
+
+Проверим наличие артефакта в Nexus:
+
+![img](img/image55.png)
