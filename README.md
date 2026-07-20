@@ -489,3 +489,104 @@ git push origin master
 Проверим наличие артефакта в Nexus:
 
 ![img](img/image55.png)
+
+Для миграции конфигурации в репозиторий внесём изменения 
+в настройки проекта.
+
+Исправим настройки VCS Root, внесём туда данные для аутентификации на GitHub:
+
+![img](img/image57.png)
+
+
+Внесём изменения в настройки проекта в разделе ```Versioned Settings```:
+
+![img](img/image56.png)
+
+После применения настроек проверим, что конфигурация загрузилась в репозиторий на GitHub:
+
+![img](img/image58.png)
+
+Создадим отдельную ветку ```feature/add_reply``` в репозитории:
+
+```
+git pull origin master
+git switch -c feature/add_reply
+git status
+```
+
+![img](img/image59.png)
+
+Отредактируем файл по пути ```src/main/java/plaindoll/Welcomer.java```. Добавим перед последней закрывающей скобкой секцию:
+
+```
+public String sayReply() {
+    return "Keep moving forward, hunter!";
+}
+```
+
+Отредактируем файл по пути ```nano src/test/java/plaindoll/WelcomerTest.java```. Добавим перед последней закрывающей скобкой секцию:
+
+```
+@Test
+public void welcomerSaysReplyWithHunter() {
+    assertThat(welcomer.sayReply(), containsString("hunter"));
+}
+```
+
+Закоммитим изменения в новую ветку и отправим её на GitHub:
+
+```
+git add .
+git commit -m "Add hunter reply"
+git push -u origin feature/add_reply
+```
+
+![img](img/image60.png)
+
+Запустим сборку из новой ветки:
+
+![img](img/image61.png)
+
+После окончания процесса мы видим, что шаг ```Maven test``` выполнился, а шаг ```Maven deploy``` нет, т.к. этот шаг выполняеттся только для ветки ```master```:
+
+![img](img/image62.png)
+
+![img](img/image63.png)
+
+
+Внесём изменения из произвольной ветки ```feature/add_reply``` в ```master```. В репозитории на GitHub создадим и выполним новый ```Pull Request``` со следующими параметрами:
+
+![img](img/image64.png)
+
+![img](img/image65.png)
+
+![img](img/image66.png)
+
+После выполнения ```Merge``` сборка в teamCity запустится снова:
+
+![img](img/image67.png)
+
+Проверим наличие артифактов в последней сборке:
+
+![img](img/image68.png)
+
+Как и положенно по заданию - артифакты отсутствуют.
+
+Теперь приступим к настройке публикации ```.jar``` в арьефакты сборки.
+
+Для этого в настройках сборки изменим параметр ```Artifact paths```. Добавим туда значение:
+
+```
+target/*.jar
+```
+
+![img](img/image69.png)
+
+После окончания процесса сборки перейдём на вкладку ```Artifacts``` и убедимся, что требуемые артифакты появились:
+
+![img](img/image70.png)
+
+Теперь перейдём в репозиторий на GitHub и убедимся, что все настройки конфигурации из TeamCity сохрангились.
+Для этого посмотрим на содержимое файла ```settings.kts```^
+
+![img](img/image71.png)
