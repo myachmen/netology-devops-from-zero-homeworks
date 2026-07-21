@@ -1,0 +1,37 @@
+---
+- name: Install and configure ClickHouse
+  hosts: clickhouse
+  become: true
+
+  roles:
+    - clickhouse
+
+  tasks:
+    - name: Create logs table
+      ansible.builtin.command:
+        argv:
+          - clickhouse-client
+          - --query
+          - >-
+            CREATE TABLE IF NOT EXISTS default.logs
+            (
+              timestamp String,
+              message String
+            )
+            ENGINE = MergeTree
+            ORDER BY tuple()
+      changed_when: false
+
+- name: Install and configure Vector
+  hosts: vector
+  become: true
+
+  roles:
+    - vector
+
+- name: Install and configure LightHouse
+  hosts: lighthouse
+  become: true
+
+  roles:
+    - lighthouse

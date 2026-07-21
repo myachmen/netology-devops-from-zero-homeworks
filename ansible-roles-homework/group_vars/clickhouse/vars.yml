@@ -1,0 +1,10 @@
+---
+clickhouse_version: "latest"
+
+clickhouse_listen_host_custom:
+  - "192.168.57.11"
+
+clickhouse_networks_default:
+  - "::1"
+  - "127.0.0.1"
+  - "192.168.57.0/24"

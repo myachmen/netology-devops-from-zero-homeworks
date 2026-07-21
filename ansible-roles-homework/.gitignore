@@ -1,0 +1,5 @@
+roles/
+*.retry
+.vagrant/
+ansible_key
+ansible_key.pub
