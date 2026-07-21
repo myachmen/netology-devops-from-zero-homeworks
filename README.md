@@ -265,3 +265,563 @@ ansible all -i inventory/prod.yml -m ping
 ```
 ansible all -i inventory/prod.yml -b -m command -a "whoami"
 ```
+
+![img](img/image10.png)
+
+Создадим файл ```requirements.yml``` следующего содержания:
+
+```
+cat > requirements.yml <<'EOF'
+---
+- src: https://github.com/AlexeySetevoi/ansible-clickhouse.git
+  scm: git
+  version: "1.13"
+  name: clickhouse
+EOF
+```
+
+Создадим какталог для ролей:
+
+```
+mkdir -p roles
+```
+
+Установим роль:
+
+```
+ansible-galaxy role install -r requirements.yml -p roles
+```
+
+![img](img/image11.png)
+
+Проверим результат:
+
+```
+ls -la roles
+ls -la roles/clickhouse
+```
+
+Видим, что появились необходимые каталоги:
+
+![img](img/image12.png)
+
+Создадим файл ```site.yml``` следующего содержания:
+
+```
+cat > site.yml <<'EOF'
+---
+- name: Install ClickHouse
+  hosts: clickhouse
+  become: true
+  roles:
+    - clickhouse
+EOF
+```
+
+Проверим синтаксис:
+
+```
+ansible-playbook -i inventory/prod.yml site.yml --syntax-check
+```
+
+![img](img/image13.png)
+
+Создадим ```group_vars```.
+Создадим директорию:
+
+```
+mkdir -p group_vars/clickhouse
+```
+
+Создадим файл ```vars.yml``` следующего содержания:
+
+```
+cat > group_vars/clickhouse/vars.yml <<'EOF'
+---
+clickhouse_version: "latest"
+
+clickhouse_listen_host_custom:
+  - "192.168.57.11"
+
+clickhouse_networks_default:
+  - "::1"
+  - "127.0.0.1"
+  - "192.168.57.0/24"
+EOF
+```
+
+Проверим загрузку переменных:
+
+```
+ansible-inventory -i inventory/prod.yml --host clickhouse-node
+```
+
+![img](img/image14.png)
+
+Запустим роль:
+
+```
+ansible-playbook -i inventory/prod.yml site.yml
+```
+
+![img](img/image15.png)
+
+![img](img/image16.png)
+
+Проверим, что приложение запустилось:
+
+```
+ansible clickhouse -i inventory/prod.yml -b -m command -a "systemctl is-active clickhouse-server"
+```
+
+![img](img/image17.png)
+
+Проверим версию приложения:
+
+```
+ansible clickhouse -i inventory/prod.yml -b -m command -a "clickhouse-client --query 'SELECT version()'"
+```
+
+![img](img/image18.png)
+
+Приступим к созданию собственной роли Vector.
+
+Сгенерируем шаблон роли:
+
+```
+ansible-galaxy role init roles/vector
+```
+
+![img](img/image19.png)
+
+Проверим структуру:
+
+```
+find roles/vector -maxdepth 2 -type f | sort
+```
+
+Заполним файл ```roles/vector/defaults/main.yml``` следующим содержимым:
+
+```
+cat > roles/vector/defaults/main.yml <<'EOF'
+---
+vector_version: "0.48.0"
+vector_arch: "amd64"
+vector_config_dir: "/etc/vector"
+vector_config_file: "/etc/vector/vector.yaml"
+EOF
+```
+
+Заполним файл ```roles/vector/tasks/main.yml``` следующим содержимым(это задачи установки):
+
+```
+cat > roles/vector/tasks/main.yml <<'EOF'
+---
+- name: Download Vector package
+  ansible.builtin.get_url:
+    url: "https://packages.timber.io/vector/{{ vector_version }}/vector_{{ vector_version }}-1_{{ vector_arch }}.deb"
+    dest: "/tmp/vector_{{ vector_version }}-1_{{ vector_arch }}.deb"
+    mode: "0644"
+
+- name: Install Vector package
+  ansible.builtin.apt:
+    deb: "/tmp/vector_{{ vector_version }}-1_{{ vector_arch }}.deb"
+    state: present
+
+- name: Create Vector config directory
+  ansible.builtin.file:
+    path: "{{ vector_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy Vector config
+  ansible.builtin.template:
+    src: vector.yaml.j2
+    dest: "{{ vector_config_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Vector
+
+- name: Enable and start Vector
+  ansible.builtin.service:
+    name: vector
+    enabled: true
+    state: started
+EOF
+```
+
+Заполним файл ```roles/vector/handlers/main.yml``` следующим содержимым(создадим handler):
+
+```
+cat > roles/vector/handlers/main.yml <<'EOF'
+---
+- name: Restart Vector
+  ansible.builtin.service:
+    name: vector
+    state: restarted
+EOF
+```
+
+Заполним файл ```roles/vector/templates/vector.yaml.j2``` следующим содержимым(создадим шаблон конфигурации):
+
+```
+cat > roles/vector/templates/vector.yaml.j2 <<'EOF'
+sources:
+  demo_logs:
+    type: demo_logs
+    format: syslog
+    interval: 1
+
+sinks:
+  clickhouse:
+    type: clickhouse
+    inputs:
+      - demo_logs
+    endpoint: http://192.168.57.11:8123
+    database: default
+    table: logs
+    skip_unknown_fields: true
+EOF
+```
+
+Добавим Vector в ```site.yml```:
+
+```
+cat > site.yml <<'EOF'
+---
+- name: Install ClickHouse
+  hosts: clickhouse
+  become: true
+  roles:
+    - clickhouse
+
+- name: Install Vector
+  hosts: vector
+  become: true
+  roles:
+    - vector
+EOF
+```
+
+Проверим синтаксис:
+
+```
+ansible-playbook -i inventory/prod.yml site.yml --syntax-check
+```
+
+Подготовим в ClickHouse таблицу, куда Vector будет отправлять тестовые события.
+Для этого в файл ```site.yml``` добавим соответствующую задачу:
+
+```
+cat > site.yml <<'EOF'
+---
+- name: Install and configure ClickHouse
+  hosts: clickhouse
+  become: true
+
+  roles:
+    - clickhouse
+
+  tasks:
+    - name: Create logs table
+      ansible.builtin.command:
+        argv:
+          - clickhouse-client
+          - --query
+          - >-
+            CREATE TABLE IF NOT EXISTS default.logs
+            (
+              timestamp String,
+              message String
+            )
+            ENGINE = MergeTree
+            ORDER BY tuple()
+      changed_when: false
+
+- name: Install and configure Vector
+  hosts: vector
+  become: true
+
+  roles:
+    - vector
+EOF
+```
+
+Запустим playbook:
+
+```
+ansible-playbook -i inventory/prod.yml site.yml
+```
+
+После окончания процесса проверим сервис Vector:
+
+```
+ansible vector -i inventory/prod.yml -b -m command -a "systemctl is-active vector"
+```
+
+![img](img/image21.png)
+
+Проверим конфигурацию Vector:
+
+```
+ansible vector -i inventory/prod.yml -b -m command -a "vector validate /etc/vector/vector.yaml"
+```
+
+![img](img/image22.png)
+
+Проверим таблицу ClickHouse.
+Убедимся, что таблица существует:
+
+```
+ansible clickhouse -i inventory/prod.yml -b -m command -a "clickhouse-client --query 'SHOW TABLES FROM default'"
+```
+
+![img](img/image23.png)
+
+Проверим количество записей в таблице:
+
+```
+ansible clickhouse -i inventory/prod.yml -b -m command -a "clickhouse-client --query 'SELECT count() FROM default.logs'"
+```
+
+![img](img/image24.png)
+
+Посмотрим несколько строк записей из таблицы:
+
+```
+ansible vector -i inventory/prod.yml -b -m command -a "journalctl -u vector -n 50 --no-pager"
+```
+
+![img](img/image25.png)
+
+Приступим к созданию собственной роли Lighthouse.
+
+Сгенерируем шаблон роли:
+
+```
+ansible-galaxy role init roles/lighthouse
+```
+
+![img](img/image26.png)
+
+Проверим структуру:
+
+```
+find roles/lighthouse -maxdepth 2 -type f | sort
+```
+
+![img](img/image27.png)
+
+Заполним файл ```roles/lighthouse/defaults/main.yml``` следующим содержимым:
+
+```
+cat > roles/lighthouse/defaults/main.yml <<'EOF'
+---
+lighthouse_repo: "https://github.com/VKCOM/lighthouse.git"
+lighthouse_branch: "master"
+lighthouse_dir: "/var/www/lighthouse"
+
+lighthouse_nginx_port: 80
+lighthouse_server_name: "_"
+EOF
+```
+
+Заполним файл ```roles/lighthouse/tasks/main.yml``` следующим содержимым(это задачи установки):
+
+```
+cat > roles/lighthouse/tasks/main.yml <<'EOF'
+---
+- name: Install LightHouse dependencies
+  ansible.builtin.apt:
+    name:
+      - git
+      - nginx
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Clone LightHouse repository
+  ansible.builtin.git:
+    repo: "{{ lighthouse_repo }}"
+    dest: "{{ lighthouse_dir }}"
+    version: "{{ lighthouse_branch }}"
+    force: true
+  notify: Restart nginx
+
+- name: Deploy nginx configuration for LightHouse
+  ansible.builtin.template:
+    src: lighthouse.conf.j2
+    dest: /etc/nginx/sites-available/lighthouse.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart nginx
+
+- name: Enable LightHouse nginx site
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/lighthouse.conf
+    dest: /etc/nginx/sites-enabled/lighthouse.conf
+    state: link
+  notify: Restart nginx
+
+- name: Disable default nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Restart nginx
+
+- name: Validate nginx configuration
+  ansible.builtin.command:
+    cmd: nginx -t
+  changed_when: false
+
+- name: Enable and start nginx
+  ansible.builtin.service:
+    name: nginx
+    enabled: true
+    state: started
+EOF
+```
+
+Заполним файл ```roles/lighthouse/handlers/main.yml``` следующим содержимым(создадим handler):
+
+```
+cat > roles/lighthouse/handlers/main.yml <<'EOF'
+---
+- name: Restart nginx
+  ansible.builtin.service:
+    name: nginx
+    state: restarted
+EOF
+```
+
+Создадим каталог шаблонов:
+
+```
+mkdir -p roles/lighthouse/templates
+```
+
+Создадим шаблон для nginx:
+
+```
+cat > roles/lighthouse/templates/lighthouse.conf.j2 <<'EOF'
+server {
+    listen {{ lighthouse_nginx_port }};
+    listen [::]:{{ lighthouse_nginx_port }};
+
+    server_name {{ lighthouse_server_name }};
+
+    root {{ lighthouse_dir }};
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /clickhouse/ {
+        proxy_pass http://192.168.57.11:8123/;
+
+        proxy_http_version 1.1;
+        proxy_set_header Host 192.168.57.11;
+        proxy_set_header Connection "";
+
+        proxy_connect_timeout 10s;
+        proxy_read_timeout 60s;
+        proxy_send_timeout 60s;
+    }
+}
+EOF
+```
+
+Подключим роль в ```site.yml```:
+
+```
+cat > site.yml <<'EOF'
+---
+- name: Install and configure ClickHouse
+  hosts: clickhouse
+  become: true
+
+  roles:
+    - clickhouse
+
+  tasks:
+    - name: Create logs table
+      ansible.builtin.command:
+        argv:
+          - clickhouse-client
+          - --query
+          - >-
+            CREATE TABLE IF NOT EXISTS default.logs
+            (
+              timestamp String,
+              message String
+            )
+            ENGINE = MergeTree
+            ORDER BY tuple()
+      changed_when: false
+
+- name: Install and configure Vector
+  hosts: vector
+  become: true
+
+  roles:
+    - vector
+
+- name: Install and configure LightHouse
+  hosts: lighthouse
+  become: true
+
+  roles:
+    - lighthouse
+EOF
+```
+
+Проверим синтаксис и запустим playbook:
+
+```
+ansible-playbook -i inventory/prod.yml site.yml --syntax-check
+ansible-playbook -i inventory/prod.yml site.yml
+```
+
+Проверим nginx:
+
+```
+ansible lighthouse -i inventory/prod.yml -b -m command -a "systemctl is-active nginx"
+```
+
+![img](img/image28.png)
+
+Проверим конфигурацию nginx:
+
+```
+ansible lighthouse -i inventory/prod.yml -b -m command -a "nginx -t"
+```
+
+![img](img/image29.png)
+
+Проверим наличие файлов в LightHouse:
+
+```
+ansible lighthouse -i inventory/prod.yml -b -m command -a "ls -la /var/www/lighthouse"
+```
+
+![img](img/image30.png)
+
+Проверим доступность через браузер:
+
+![img](img/image31.png)
+
+Приступим к проверке идемпотентности.
+Запустим playbook ещё раз:
+
+```
+ansible-playbook -i inventory/prod.yml site.yml
+```
+
+GПосле окончания процесса видим, что никаких изменений не произошло:
+
+![img](img/image32.png)
