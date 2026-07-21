@@ -953,12 +953,71 @@ ansible-galaxy role install -r requirements.yml -p roles-github
 
 ![img](img/image40.png)
 
+Переименуем локальные роли:
+
+```
+mv roles roles-local-backup
+```
+
 Запустим playbook:
 
 ```
 ANSIBLE_ROLES_PATH=/home/vagrant/roles-github ansible-playbook -i inventory/prod.yml site.yml
 ```
 
+В процессе выполнения мы видим, что используются роли из GitHub:
+
+![img](img/image42.png)
+
+После окончания процесса мы видим, что никаких изменений не произошло, хотя роли скачивались из репозиториев на GitHub:
+
 ![img](img/image41.png)
 
-После окончания процесса мы видим, что никаких изменений не произошло, хотя роли скачивались из репозиториев на GitHub.
+Перенесём основной проект в ветку ```hw-ansible-roles```.
+
+Создадим директорию и скопируем туда необходимые файлы:
+
+```
+mkdir -p /vagrant/ansible-roles-homework-final
+
+cp -a inventory /vagrant/ansible-roles-homework-final/
+cp -a group_vars /vagrant/ansible-roles-homework-final/
+cp requirements.yml /vagrant/ansible-roles-homework-final/
+cp site.yml /vagrant/ansible-roles-homework-final/
+```
+
+Перенесём файлы в основной репозиторий на GitHub:
+
+```
+mkdir ansible-roles-homework
+
+Copy-Item `
+  D:\Program\DevOps\Vagrant\Vagrant-Project\ansible-roles-lab\ansible-roles-homework-final\* `
+  .\ansible-roles-homework\ `
+  -Recurse -Force
+```
+
+![img](img/image43.png)
+
+Создадим файл ```.gitignore``` следующего содержания:
+
+```
+@'
+roles/
+*.retry
+.vagrant/
+ansible_key
+ansible_key.pub
+'@ | Set-Content .\ansible-roles-homework\.gitignore
+```
+
+Создадим коммит и отправим файлы в удалённый репозиторий:
+
+```
+git add ansible-roles-homework
+git status
+git commit -m "Complete Ansible roles homework"
+git push
+```
+
+![img](img/image44.png)
