@@ -825,3 +825,140 @@ ansible-playbook -i inventory/prod.yml site.yml
 GПосле окончания процесса видим, что никаких изменений не произошло:
 
 ![img](img/image32.png)
+
+Экспортируем проект в общую папку Vagrant:
+
+```
+cp -a ~/ansible-roles-homework /vagrant/ansible-roles-homework-export
+```
+
+Проверим, что всё скопировалось:
+
+```
+find /vagrant/ansible-roles-homework-export -maxdepth 3 -type f | sort
+```
+
+![img](img/image33.png)
+
+Создадим на GitHub два новых репозитория: ```vector-role``` и ```lighthouse-role```:
+
+![img](img/image34.png)
+
+![img](img/image35.png)
+
+Создадим директорию для репозиториев ролей:
+
+```
+mkdir D:\Homework\ansible-roles
+```
+
+Скопируем роли в эту директорию:
+
+```
+Copy-Item `
+  .\ansible-roles-homework-export\roles\vector `
+  D:\Homework\ansible-roles\vector-role `
+  -Recurse
+
+Copy-Item `
+  .\ansible-roles-homework-export\roles\lighthouse `
+  D:\Homework\ansible-roles\lighthouse-role `
+  -Recurse
+```
+
+Опубликуем роль Vektor:
+
+```
+cd D:\Homework\ansible-roles\vector-role
+
+git init
+git branch -M main
+git add .
+git commit -m "Add Vector Ansible role"
+```
+
+![img](img/image36.png)
+
+Подключим удалённый репозиторий:
+
+```
+git remote add origin https://github.com/myachmen/vector-role.git
+```
+
+Отправим код в удалённый репозиторий:
+
+```
+git push -u origin main
+```
+
+![img](img/image37.png)
+
+Создадим тег версии:
+
+```
+git tag 1.0.0
+git push origin 1.0.0
+```
+
+![img](img/image38.png)
+
+Аналогичным сапособом опубликуем роль LightHouse:
+
+```
+cd D:\Homework\ansible-roles\lighthouse-role
+
+git init
+git branch -M main
+git add .
+git commit -m "Add LightHouse Ansible role"
+
+git remote add origin https://github.com/myachmen/lighthouse-role.git
+git push -u origin main
+
+git tag 1.0.0
+git push origin 1.0.0
+```
+
+![img](img/image39.png)
+
+Обновим файл ```requirements.yml```.
+
+```
+cat > requirements.yml <<'EOF'
+---
+- src: https://github.com/AlexeySetevoi/ansible-clickhouse.git
+  scm: git
+  version: "1.13"
+  name: clickhouse
+
+- src: https://github.com/myachmen/vector-role.git
+  scm: git
+  version: "1.0.0"
+  name: vector
+
+- src: https://github.com/myachmen/lighthouse-role.git
+  scm: git
+  version: "1.0.0"
+  name: lighthouse
+EOF
+```
+
+Скачаем роли в новый каталог:
+
+```
+mkdir roles-github
+
+ansible-galaxy role install -r requirements.yml -p roles-github
+```
+
+![img](img/image40.png)
+
+Запустим playbook:
+
+```
+ANSIBLE_ROLES_PATH=/home/vagrant/roles-github ansible-playbook -i inventory/prod.yml site.yml
+```
+
+![img](img/image41.png)
+
+После окончания процесса мы видим, что никаких изменений не произошло, хотя роли скачивались из репозиториев на GitHub.
