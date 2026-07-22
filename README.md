@@ -194,3 +194,350 @@ if __name__ == '__main__':
 
 Для выполнения задания выполним следующие действия.
 
+Создадим на GitHub отдельный репозиторий для собственных коллекций:
+
+![img](img/image1.png)
+
+![img](img/image2.png)
+
+Подготовим виртуальные машины с помощью Vagrant. В директории с Vagrant проектом создадим Vagrant файл следующего содержания:
+
+```
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/jammy64"
+  config.vm.hostname = "ansible-dev"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = "ansible-dev"
+    vb.memory = 4096
+    vb.cpus = 2
+  end
+end
+```
+
+Запустим виртуальную машину:
+
+```
+vagrant up
+```
+
+![img](img/image3.png)
+
+Подключимся к созданной виртуальной машине:
+
+```
+vagrant ssh
+```
+
+и установим необходимые пакеты:
+
+```
+sudo apt install -y \
+    python3-pip \
+    python3-venv \
+    python3-dev \
+    build-essential \
+    git \
+    curl \
+    jq \
+    tree
+```
+
+Проверим версии пакетов:
+
+```
+python3 -m pip --version
+python3 -m venv --help | head -n 1
+```
+![img](img/image4.png)
+
+Настроим Git:
+
+```
+git config --global user.name "Mark Yachmen"
+git config --global user.email "m.yachmen@gmail.com"
+
+git config --global --list
+```
+
+![img](img/image5.png)
+
+Приступим к подготовке окружения.
+Создадим рабочую директорию:
+
+```
+mkdir -p ~/ansible-module-work
+cd ~/ansible-module-work
+```
+
+Склонируем исходный репозиторий Ansible:
+
+```
+git clone https://github.com/ansible/ansible.git
+cd ansible
+```
+
+и проверим результат:
+
+```
+cd ~/ansible-module-work/ansible
+
+git status
+git branch --show-current
+```
+
+![img](img/image6.png)
+
+![img](img/image7.png)
+
+Создадим ```Python virtual environment```:
+
+```
+python3 -m venv venv
+source venv/bin/activate
+```
+
+![img](img/image8.png)
+
+Обновим инструменты Python:
+
+```
+python -m pip install --upgrade pip setuptools wheel
+```
+
+![img](img/image9.png)
+
+Установим зависимости Ansible:
+
+```
+python -m pip install -r requirements.txt
+```
+
+![img](img/image10.png)
+
+Подключим ```hacking/env-setup```:
+
+```
+source hacking/env-setup
+```
+
+![img](img/image11.png)
+
+Выполним тестовый запуск:
+
+```
+ansible localhost -m ping -c local
+```
+
+![img](img/image12.png)
+
+Создадим рабочий каталог для собственного модуля:
+
+```
+mkdir -p ~/ansible-module-work/my-module
+cd ~/ansible-module-work/my-module
+```
+
+Создадим Python файл следующего содерржания:
+
+```
+#!/usr/bin/python
+
+from __future__ import absolute_import, division, print_function
+
+__metaclass__ = type
+
+DOCUMENTATION = r'''
+---
+module: my_own_module
+short_description: Creates a text file with specified content
+version_added: "1.0.0"
+description:
+  - Creates a text file at the specified path.
+  - Updates the file only when its content differs.
+options:
+  path:
+    description:
+      - Path to the file.
+    required: true
+    type: path
+  content:
+    description:
+      - Content that should be written to the file.
+    required: true
+    type: str
+author:
+  - Mark Yachmen
+'''
+
+EXAMPLES = r'''
+- name: Create a text file
+  my_own_module:
+    path: /tmp/example.txt
+    content: Hello from my own module
+'''
+
+RETURN = r'''
+path:
+  description: Path to the managed file.
+  returned: always
+  type: str
+  sample: /tmp/example.txt
+changed:
+  description: Whether the file was created or changed.
+  returned: always
+  type: bool
+  sample: true
+'''
+
+import os
+
+from ansible.module_utils.basic import AnsibleModule
+
+
+def run_module():
+    module_args = dict(
+        path=dict(type="path", required=True),
+        content=dict(type="str", required=True),
+    )
+
+    module = AnsibleModule(
+        argument_spec=module_args,
+        supports_check_mode=True,
+    )
+
+    path = module.params["path"]
+    content = module.params["content"]
+
+    current_content = None
+
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as file:
+                current_content = file.read()
+        except OSError as error:
+            module.fail_json(
+                msg=f"Failed to read file: {error}",
+                path=path,
+            )
+
+    changed = current_content != content
+
+    if changed and not module.check_mode:
+        try:
+            parent_directory = os.path.dirname(path)
+
+            if parent_directory:
+                os.makedirs(parent_directory, exist_ok=True)
+
+            with open(path, "w", encoding="utf-8") as file:
+                file.write(content)
+        except OSError as error:
+            module.fail_json(
+                msg=f"Failed to write file: {error}",
+                path=path,
+            )
+
+    module.exit_json(
+        changed=changed,
+        path=path,
+        message="File content is already correct"
+        if not changed
+        else "File was created or updated",
+    )
+
+
+def main():
+    run_module()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+
+Сделаем Python файл исполняемым:
+
+```
+chmod +x my_own_module.py
+```
+
+Выполним проверку синтаксиса Python файла:
+
+```
+python -m py_compile my_own_module.py
+```
+
+Скопируем модуль во временный каталог модулей Ansible:
+
+```
+cd ~/ansible-module-work/ansible
+
+cp ~/ansible-module-work/my-module/my_own_module.py lib/ansible/modules/my_own_module.py
+
+```
+
+Запустим sanity-проверку только для собственного модуля:
+
+```
+ansible-test sanity --test compile lib/ansible/modules/my_own_module.py
+```
+
+![img](img/image13.png)
+
+Проверим документацию модуля:
+
+```
+ansible-doc -t module my_own_module
+```
+
+![img](img/image14.png)
+
+Создадим тестовые аргументы.
+В директории с собственным модулем создадим файл ```args.json``` следующего содержания:
+
+```
+cat > args.json <<'EOF'
+{
+  "ANSIBLE_MODULE_ARGS": {
+    "path": "/tmp/my_own_module_test.txt",
+    "content": "Hello from my own module"
+  }
+}
+EOF
+```
+
+Запустим модуль напрямую:
+
+```
+python my_own_module.py < args.json
+```
+
+![img](img/image15.png)
+
+Проверим содержимое файла ```my_own_module_test.txt```:
+
+```
+cat /tmp/my_own_module_test.txt
+```
+
+![img](img/image16.png)
+
+Запустим модуль второй раз:
+
+```
+python my_own_module.py < args.json
+```
+
+![img](img/image17.png)
+
+В сообщении мы видим: 
+
+```
+"changed": false
+```
+
+а это знаачит, что при повторном запуске никаких изменений не произошло, что подтверждает идемпотентность.
+
+
+
