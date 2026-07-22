@@ -539,5 +539,303 @@ python my_own_module.py < args.json
 
 а это знаачит, что при повторном запуске никаких изменений не произошло, что подтверждает идемпотентность.
 
+Приступим к созданию playbook.
+Создадим файл ```test_module.yml``` следующего содержания:
+
+```
+---
+- name: Test custom module
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Create test file
+      my_own_module:
+        path: /tmp/my_own_module_playbook.txt
+        content: "Created by Ansible playbook"
+```
+
+Запустим playbook, явно указав путь к каталогу модуля:
+
+```
+ANSIBLE_LIBRARY=~/ansible-module-work/my-module ansible-playbook test_module.yml
+```
+
+![img](img/image18.png)
+
+После окончания процесса в логе видим сообщение:
+
+```
+changed=1  
+```
+
+Запустим playbook ещё раз:
+
+![img](img/image19.png)
+
+В этот раз в логе видим сообщение:
+
+```
+changed=0  
+```
+
+что говорит о том, что после повтороного запуска никаких изменений не произошло.
+
+Проверим содержимое файла ```my_own_module_playbook.txt```^
+
+```
+cat /tmp/my_own_module_playbook.txt
+```
+
+![img](img/image20.png)
+
+Приступим к созданию Collection.
+
+Склонируем созданный в начале репозиторий:
+
+```
+cd ~/ansible-module-work
+git clone https://github.com/myachmen/my_own_collection.git
+cd my_own_collection
+```
+
+Инициализируем collection:
+
+```
+ansible-galaxy collection init myachmen.my_own_collection --init-path .
+```
+
+![img](img/image21.png)
+
+Создадим каталог для модуля и перенесём его:
+
+```
+mkdir -p plugins/modules
+cp ~/ansible-module-work/my-module/my_own_module.py plugins/modules/my_own_module.py
+```
+
+Создадим структуру role:
+
+```
+mkdir -p roles/my_own_role/{defaults,tasks}
+```
+
+Создадим файл ```roles/my_own_role/defaults/main.yml``` переменных по умолчанию  следующего содержания:
+
+```
+---
+my_own_module_path: /tmp/my_own_collection_file.txt
+my_own_module_content: "Created by my_own_role"
+```
+
+Создадим файл ```roles/my_own_role/tasks/main.yml``` с задачами role следующего содержания:
+
+```
+---
+- name: Create file with custom module
+  myachmen.my_own_collection.my_own_module:
+    path: "{{ my_own_module_path }}"
+    content: "{{ my_own_module_content }}"
+```
+
+Проверим структуру:
+
+```
+tree -a -L 5
+```
+
+![img](img/image22.png)
+
+Создадим playbook, который будет вызывать роль из collection.
+
+```
+cd ~/ansible-module-work/my_own_collection
+mkdir -p playbooks
+```
+
+Создаддим файл ```playbooks/test_role.yml``` следующего содержания:
+
+```
+---
+- name: Test custom collection role
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  roles:
+    - role: myachmen.my_own_collection.my_own_role
+```
+
+Отредактируем файл galaxy.yml.
+Пропишем следующие значения полей:
+
+```
+namespace: myachmen
+name: my_own_collection
+version: 1.0.0
+readme: README.md
+
+authors:
+  - Mark Yachmen
+
+description: Collection with a custom Ansible module for managing text files
+
+license:
+  - GPL-2.0-or-later
+
+tags:
+  - ansible
+  - module
+  - collection
+
+dependencies: {}
+
+repository: https://github.com/myachmen/my_own_collection
+documentation: https://github.com/myachmen/my_own_collection
+homepage: https://github.com/myachmen/my_own_collection
+issues: https://github.com/myachmen/my_own_collection/issues
+
+build_ignore:
+  - "*.tar.gz"
+  - ".git"
+```
+
+Выполним первичную сборку:
+
+```
+ansible-galaxy collection build
+```
+
+![img](img/image23.png)
+
+Создадим полностью отдельный каталог, чтобы Ansible не использовал исходники collection:
+
+```
+mkdir -p ~/ansible-module-work/collection-test
+cd ~/ansible-module-work/collection-test
+```
+
+Скопируем туда архив и playbook:
+
+```
+cp ~/ansible-module-work/my_own_collection/myachmen-my_own_collection-1.0.0.tar.gz .
+cp ~/ansible-module-work/my_own_collection/playbooks/test_role.yml .
+```
+
+Создадим отдельный каталог для установки:
+
+```
+mkdir -p collections
+```
+
+Установим collection именно из архива:
+
+```
+ansible-galaxy collection install ./myachmen-my_own_collection-1.0.0.tar.gz -p ./collections
+```
+
+![img](img/image24.png)
+
+Проверим структуру установки:
+
+```
+tree collections -L 6
+```
+
+![img](img/image25.png)
+
+Запустим установленную collection, но перед запуском удалим файл от предыдущих проверок:
+
+```
+rm -f /tmp/my_own_collection_file.txt
+```
+
+Запустиv playbook:
+
+```
+ANSIBLE_COLLECTIONS_PATH=./collections \
+ansible-playbook test_role.yml
+```
+
+![img](img/image26.png)
+
+После окончания процесса в логах мы видим сообщение:
+
+```
+changed=1
+```
+
+а это значит, что изменения применились.
+
+Проверим содержимое файла ```my_own_collection_file.txt```:
+
+```
+cat /tmp/my_own_collection_file.txt
+```
+
+![img](img/image27.png)
+
+Запустим playbook повторно:
+
+```
+ANSIBLE_COLLECTIONS_PATH=./collections \
+ansible-playbook test_role.yml
+```
+
+![img](img/image28.png)
+
+После окончания процесса в логах мы видим сообщение:
+
+```
+changed=0
+```
+
+а это значит, что при пповторном запуске изменений не произошло и модуль сохранил идемпотентность.
+
+Сохраняем collection в GitHub.
+
+Вернёмся в локальный репозиторий:
+
+```
+cd ~/ansible-module-work/my_own_collection
+```
+
+и проверим состояние:
+
+```
+git status
+
+```
+
+![img](img/image29.png)
+
+Создадим файл ```.gitignore``` следующего содержания:
+
+```
+cat > .gitignore <<'EOF'
+*.tar.gz
+__pycache__/
+*.pyc
+EOF
+```
 
 
+Сделаем коммит:
+
+```
+git add .
+git commit -m "Add custom Ansible module and collection role"
+git push -u origin main
+```
+
+![img](img/image30.png)
+
+Создадим требуемый тег:
+
+```
+git tag 1.0.0
+git push origin 1.0.0
+```
+
+![img](img/image31.png)
