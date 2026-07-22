@@ -839,3 +839,21 @@ git push origin 1.0.0
 ```
 
 ![img](img/image31.png)
+
+Скопируем получившийся архив на локальную машину:
+
+```
+cp ~/ansible-module-work/my_own_collection/myachmen-my_own_collection-1.0.0.tar.gz /vagrant/
+```
+
+
+Создадим Release через GitHub:
+
+![img](img/image32.png)
+
+![img](img/image33.png)
+
+![img](img/image34.png)
+
+![img](img/image35.png)
+
