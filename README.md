@@ -244,7 +244,7 @@ echo \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 ```
 
-Устанавим Docker:
+Установим Docker:
 
 ```
 sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
@@ -310,7 +310,7 @@ docker compose ps -a
 
 ![img](img/image6.png)
 
-В браузере перейдём по адресу ```http://localhost:8888``` для того чтобы открыть веб-интерфейса ПО chronograf:
+В браузере перейдём по адресу ```http://localhost:8888``` для того чтобы открыть веб-интерфейс ПО chronograf:
 
 ![img](img/image7.png)
 
@@ -333,7 +333,7 @@ docker compose ps -a
 ![img](img/image8.png)
 
 Теперь выберем базу данных ```telegraf.autogen```, ```measurement cpu```, хост ```telegraf-getting-started``` и поле ```usage_system```. 
-В результате увидим сформированый InfluxQL-запрос и получим график утилизации CPU:
+В результате увидим сформированный InfluxQL-запрос и получим график утилизации CPU:
 
 ![img](img/image9.png)
 
@@ -374,7 +374,7 @@ docker compose ps -a
 В актуальной версии репозитория ```influxdata/sandbox``` плагин ```inputs.docker```, указанный в задании, уже присутствует в конфигурационном файле ```telegraf/telegraf.conf```. 
 Также в ```docker-compose.yml``` уже настроено подключение ```/var/run/docker.sock``` к контейнеру Telegraf. Поэтому дополнительное добавление плагина и изменение ```docker-compose.yml``` не потребовались.
 
-После запуска Telegraf в Chronograf автоматически появились Docker-метрики (```docker```, ```docker_container_cpu```, ```docker_container_mem```, ```docker_container_net```, ```docker_container_blkio```, ```docker_container_status```), что подтверждает корректную работу плагина inputs.docker:
+После запуска Telegraf в Chronograf автоматически появились Docker-метрики (```docker```, ```docker_container_cpu```, ```docker_container_mem```, ```docker_container_net```, ```docker_container_blkio```, ```docker_container_status```), что подтверждает корректную работу плагина ```inputs.docker```:
 
 ![img](img/image10.png)
 
