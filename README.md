@@ -135,8 +135,8 @@ http://prometheus:9090
 Изучите самостоятельно ресурсы:
 
 1. [PromQL tutorial for beginners and humans](https://valyala.medium.com/promql-tutorial-for-beginners-9ab455142085).
-1. [Understanding Machine CPU usage](https://www.robustperception.io/understanding-machine-cpu-usage).
-1. [Introduction to PromQL, the Prometheus query language](https://grafana.com/blog/2020/02/04/introduction-to-promql-the-prometheus-query-language/).
+2. [Understanding Machine CPU usage](https://www.robustperception.io/understanding-machine-cpu-usage).
+3. [Introduction to PromQL, the Prometheus query language](https://grafana.com/blog/2020/02/04/introduction-to-promql-the-prometheus-query-language/).
 
 Создайте Dashboard и в ней создайте Panels:
 
@@ -292,3 +292,91 @@ bytes (IEC)
 После всех произведённых настроек Dashboard будет выглядеть следующим образом:
 
 ![img](img/image31.png)
+
+
+
+## Задание 3
+
+1. Создайте для каждой Dashboard подходящее правило alert — можно обратиться к первой лекции в блоке «Мониторинг».
+2. В качестве решения задания приведите скриншот вашей итоговой Dashboard..
+
+
+## Решение 3
+
+Для настойки ```Alert``` перейдём в режим настройки панели и переключимся на вкладку ```Alert```:
+
+![img](img/image32.png)
+
+Нажмём на кнопку ```Create Alert``` и попадём в редактор:
+
+![img](img/image33.png)
+
+В разделе ```Conditions``` установим значение параметра ``` IS ABOVE``` равное ```80```, что будет означать срабатывание при загрузке CPU больше 80%:
+
+![img](img/image34.png)
+
+Сохраним результат нажатием кнопки ```Apply```.
+
+Аналогичным образом настроим ```Alert``` для панели ```Load Average```.
+
+После создания ```Alert``` установим настройки:
+
+```
+Name:           Load Average alert
+Evaluate every: 1m
+For:            5m
+```
+
+В разделе ```Conditions``` установим значение параметра ``` IS ABOVE``` равное ```2```:
+
+![img](img/image35.png)
+
+Этот ```Alert``` будет работать по логике: если средний ```Load 1m``` за последние пять минут превышает количество vCPU (2) и это состояние сохраняется 5 минут — Grafana переведёт alert в тревожное состояние.
+
+Аналогичным образом настроим ```Alert``` для панели ```Free Memory```.
+
+После создания ```Alert``` установим настройки:
+
+```
+Name:           Free Memory alert
+Evaluate every: 1m
+For:            5m
+```
+
+В разделе ```Conditions``` установим значение параметра ``` IS BELOW``` равное ```104857600```:
+
+![img](img/image36.png)
+
+![img](img/image37.png)
+
+Аналогичным образом настроим ```Alert``` для панели ```Free Disk Space```.
+
+После создания ```Alert``` установим настройки:
+
+```
+Name:           Free Disk Space alert
+Evaluate every: 1m
+For:            5m
+```
+
+В разделе ```Conditions``` установим значение параметра ``` IS BELOW``` равное ```32212254720```:
+
+![img](img/image38.png)
+
+![img](img/image39.png)
+
+Логика работы этого ```Alert``` очень похожа на память:
+
+```
+свободный диск < 30 GiB → проблема
+```
+
+В итоге Dashboard будет иметь следующий вид:
+
+![img](img/image40.png)
+
+
+
+
+
+
