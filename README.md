@@ -1,4 +1,4 @@
-# Домашнее задание по теме "Системы мониторинга" Ячмень Марк Викторович
+# Домашнее задание по теме "Средство визуализации Grafana" Ячмень Марк Викторович
 
 ## Задание 1
 
@@ -76,10 +76,10 @@ git clone --branch MNT-video https://github.com/netology-code/mnt-homeworks.git
 
 ![img](img/image4.png)
 
-Переёдём в директорию ```~/mnt-homeworks/10-monitoring-03-grafana/help``` и запустим Docker-контиейнеры:
+Перейдём в директорию ```~/mnt-homeworks/10-monitoring-03-grafana/help``` и запустим Docker-контейнеры:
 
 ```
-~/mnt-homeworks/10-monitoring-03-grafana/help
+cd ~/mnt-homeworks/10-monitoring-03-grafana/help
 docker compose up -d
 ```
 
@@ -303,7 +303,7 @@ bytes (IEC)
 
 ## Решение 3
 
-Для настойки ```Alert``` перейдём в режим настройки панели и переключимся на вкладку ```Alert```:
+Для настройки ```Alert``` перейдём в режим настройки панели и переключимся на вкладку ```Alert```:
 
 ![img](img/image32.png)
 
@@ -390,7 +390,7 @@ For:            5m
 ![img](img/image41.png)
 
 В открывшемся окне перейдём на вкладку ```Export``` и нажмём на кнопку ```Save to file```.
-После этого Dasboard скачается на диск в виде JSON-файла:
+После этого Dashboard скачается на диск в виде JSON-файла:
 
 ![img](img/image42.png)
 
