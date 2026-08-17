@@ -210,7 +210,7 @@ vagrant up
 Подключимся к созданной виртуальной машине и установим несколько базовых пакетов, необходимых для выполнения домашней работы:
 
 ```
-vafrant ssh
+vagrant ssh
 sudo apt install -y ca-certificates curl git
 ```
 
