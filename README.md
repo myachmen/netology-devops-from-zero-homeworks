@@ -1,45 +1,287 @@
-![GitHub](https://img.shields.io/badge/GitHub-Repository-black)
-![Course](https://img.shields.io/badge/Course-DevOps-blue)
-![Platform](https://img.shields.io/badge/Platform-Netology-green)
+# Домашнее задание по теме "Системы мониторинга" Ячмень Марк Викторович
+
+## Задание 1
+
+Вас пригласили настроить мониторинг на проект. На онбординге вам рассказали, что проект представляет из себя платформу для вычислений с выдачей текстовых отчетов, которые сохраняются на диск. Взаимодействие с платформой осуществляется по протоколу http. Также вам отметили, что вычисления загружают ЦПУ. Какой минимальный набор метрик вы выведите в мониторинг и почему?
+
+## Решение 1
+
+Для выполнения задания выполним следующие действия.
+
+Создадим рабочий каталог:
+
+```
+mkdir -p ~/homeworks/hw-terraform-intro
+cd ~/homeworks/hw-terraform-intro
+```
+
+Скачаем исходники задания:
+
+```
+git clone https://github.com/netology-code/ter-homeworks.git
+```
+
+![img](img/image1.png)
+
+Переходим в директорию и проверяем содержимое:
+
+## Задание 2
+
+Менеджер продукта посмотрев на ваши метрики сказал, что ему непонятно что такое RAM/inodes/CPUla. Также он сказал, что хочет понимать, насколько мы выполняем свои обязанности перед клиентами и какое качество обслуживания. Что вы можете ему предложить?
+
+## Решение 2
 
 
+## Задание 3
 
-# Домашние задания по курсу "Devops-инженер с нуля: расширенный курс" от Нетологии
+Вашей DevOps команде в этом году не выделили финансирование на построение системы сбора логов. Разработчики в свою очередь хотят видеть все ошибки, которые выдают их приложения. Какое решение вы можете предпринять в этой ситуации, чтобы разработчики получали ошибки приложения?
 
-## Модуль "IT-системы и операционная система Linux" [сертификат](Electronic_certificate/SLINA-51-9785269.pdf)
-
-- [Архитектура компьютера. Операционная система](Materials/Computer_architecture_Operating_system.pdf) ([docx](Materials/Computer_architecture_Operating_system.docx))
-- [Знакомство с операционной системой Linux](Materials/Introduction_to_the_Linux_operating_system.pdf) ([docx](Materials/Introduction_to_the_Linux_operating_system.docx))
-- [Основы работы в терминалe ОС Linux](Materials/Basics_of_working_in_the_Linux_OS_terminal.pdf) ([docx](Materials/Basics_of_working_in_the_Linux_OS_terminal.docx))
-
-## Модуль "Операционная система Linux" [сертификат](Electronic_certificate/SLINB-51-9785269.pdf)
-
-- [Процессы, управление процессами](Materials/Linux_operating_system/Processes_process_management.pdf) ([docx](Materials/Linux_operating_system/Processes_process_management.docx))
-- [Дисковые системы](Materials/Linux_operating_system/Disk_systems.pdf) ([docx](Materials/Linux_operating_system/Disk_systems.docx))
-
-## Модуль "Администрирование операционной системы Linux" [сертификат](Electronic_certificate/)
-
-## Модуль "Программирование на Bash" [сертификат](Electronic_certificate/)
-
-## Модуль "Сеть, сетевые протоколы" [сертификат](Electronic_certificate/)
-
-## Модуль "Виртуализация" [сертификат](Electronic_certificate/)
-
-## Модуль "Автоматизация и CI/СD" [сертификат](Electronic_certificate/)
-
-## Модуль "Мониторинг" [сертификат](Electronic_certificate/SLINA-51-9785269.pdf)
-
-## Модуль "Отказоустойчивость" [сертификат](Electronic_certificate/)
-
-## Модуль "Системы хранения и передачи данных" [сертификат](Electronic_certificate/)
-
-## Модуль "Реляционные базы данных и администрирование баз данных" [сертификат](Electronic_certificate/)
-
-## Модуль "Информационная безопасность" [сертификат](Electronic_certificate/)
+## Решение 3
 
 
-## Модуль "Системы управления версиями" [сертификат](Electronic_certificate/)
+## Задание 4
 
-- [Системы контроля версий](../../tree/hw-Version_control_systems)
-- [Основы Git](../../tree/hw-Git_fundamentals)
-- [Инструменты Git](../../tree/hw-Git_tools)
+Вы, как опытный SRE, сделали мониторинг, куда вывели отображения выполнения SLA=99% по http кодам ответов. Вычисляете этот параметр по следующей формуле: summ_2xx_requests/summ_all_requests. Данный параметр не поднимается выше 70%, но при этом в вашей системе нет кодов ответа 5xx и 4xx. Где у вас ошибка?
+
+## Решение 4
+
+
+## Задание 5
+
+Опишите основные плюсы и минусы pull и push систем мониторинга.
+
+## Решение 5
+
+## Задание 6
+
+Какие из ниже перечисленных систем относятся к push модели, а какие к pull? А может есть гибридные?
+
+    - Prometheus 
+    - TICK
+    - Zabbix
+    - VictoriaMetrics
+    - Nagios
+
+## Решение 6
+
+
+## Задание 7
+
+Склонируйте себе [репозиторий](https://github.com/influxdata/sandbox/tree/master) и запустите TICK-стэк, 
+используя технологии docker и docker-compose.
+
+В виде решения на это упражнение приведите скриншот веб-интерфейса ПО chronograf (`http://localhost:8888`). 
+
+P.S.: если при запуске некоторые контейнеры будут падать с ошибкой - проставьте им режим `Z`, например
+`./data:/var/lib:Z`
+
+## Решение 7
+
+Для выполнения задания выполним следующие действия.
+
+Подготовим виртуальную машину с помощью Vagrant. В директории с Vagrant проектом создадим Vagrant файл следующего содержания:
+
+```
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/jammy64"
+
+  config.vm.define "monitoring" do |monitoring|
+    monitoring.vm.hostname = "monitoring"
+
+    monitoring.vm.network "private_network", ip: "192.168.56.30"
+
+    # Доступ к Chronograf с Windows
+    monitoring.vm.network "forwarded_port",
+      guest: 8888,
+      host: 8888,
+      auto_correct: true
+
+    monitoring.vm.provider "virtualbox" do |vb|
+      vb.name = "monitoring-systems-lab"
+      vb.memory = 4096
+      vb.cpus = 2
+    end
+  end
+end
+```
+
+Запустим виртуальную машину ```monitoring-systems-lab```:
+
+```
+vagrant up
+```
+![img](img/image1.png)
+
+Подключимся к созданной виртуальной машине и установим несколько базовых пакетов, необходимых для выполнения домашней работы:
+
+```
+vafrant ssh
+sudo apt install -y ca-certificates curl git
+```
+
+![img](img/image2.png)
+
+Добавим официальный репозиторий Docker.
+Создадим каталог для ключей:
+
+```
+sudo install -m 0755 -d /etc/apt/keyrings
+```
+
+Скачаем GPG-ключ Docker:
+
+```
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+```
+
+Изменим права на файл ключа:
+
+```
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+```
+
+Добавим репозиторий Docker:
+
+```
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+```
+
+Устанавим Docker:
+
+```
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+Проверим установку:
+
+```
+sudo systemctl status docker --no-pager
+```
+
+![img](img/image3.png)
+
+Настроим работу с Docker без ```sudo```:
+
+```
+sudo usermod -aG docker vagrant
+```
+
+Проверим работу:
+
+```
+groups
+docker run --rm hello-world
+```
+
+![img](img/image4.png)
+
+Склонируем на виртуальную машину репозиторий из задания:
+
+```
+git clone https://github.com/influxdata/sandbox.git
+```
+
+![img](img/image5.png)
+
+
+Так как скрипт ```./sandbox up``` рассчитан на старую отдельную команду docker-compose, а в системе установлен современный Docker Compose Plugin, запустим стек командой:
+
+```
+source .env-latest
+docker compose up -d --build
+```
+
+Загрузка .env-latest потребовалась для установки переменной TYPE=latest, используемой при выборе Dockerfile для компонентов стека.
+
+При первом запуске контейнеры Kapacitor и Chronograf завершались с ошибкой ```permission denied``` при записи в примонтированные каталоги. 
+В задании для подобных проблем предлагается использовать режим :Z для Docker volumes. 
+В используемой Ubuntu проблема была связана с правами доступа к каталогам и была устранена изменением разрешений:
+
+```
+sudo chmod -R 777 kapacitor/data
+sudo chmod -R 777 chronograf/data
+```
+
+После изменения прав контейнеры Kapacitor и Chronograf успешно запустились.
+
+Проверим текущее состояние всех контейнеров:
+
+```
+docker compose ps -a
+```
+
+![img](img/image6.png)
+
+В браузере перейдём по адресу ```http://localhost:8888``` для того чтобы открыть веб-интерфейса ПО chronograf:
+
+![img](img/image7.png)
+
+
+## Задание 8
+
+Перейдите в веб-интерфейс Chronograf (http://localhost:8888) и откройте вкладку Data explorer.
+        
+    - Нажмите на кнопку Add a query
+    - Изучите вывод интерфейса и выберите БД telegraf.autogen
+    - В `measurments` выберите cpu->host->telegraf-getting-started, а в `fields` выберите usage_system. Внизу появится график утилизации cpu.
+    - Вверху вы можете увидеть запрос, аналогичный SQL-синтаксису. Поэкспериментируйте с запросом, попробуйте изменить группировку и интервал наблюдений.
+
+Для выполнения задания приведите скриншот с отображением метрик утилизации cpu из веб-интерфейса.
+
+## Решение 8
+
+В веб-интерфейсе Chronograf перейдём в раздел Data Explorer:
+
+![img](img/image8.png)
+
+Теперь выберем базу данных ```telegraf.autogen```, ```measurement cpu```, хост ```telegraf-getting-started``` и поле ```usage_system```. 
+В результате увидим сформированый InfluxQL-запрос и получим график утилизации CPU:
+
+![img](img/image9.png)
+
+
+## Задание 9
+
+Изучите список [telegraf inputs](https://github.com/influxdata/telegraf/tree/master/plugins/inputs). 
+Добавьте в конфигурацию telegraf следующий плагин - [docker](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/docker):
+```
+[[inputs.docker]]
+  endpoint = "unix:///var/run/docker.sock"
+```
+
+Дополнительно вам может потребоваться донастройка контейнера telegraf в `docker-compose.yml` дополнительного volume и 
+режима privileged:
+```
+  telegraf:
+    image: telegraf:1.4.0
+    privileged: true
+    volumes:
+      - ./etc/telegraf.conf:/etc/telegraf/telegraf.conf:Z
+      - /var/run/docker.sock:/var/run/docker.sock:Z
+    links:
+      - influxdb
+    ports:
+      - "8092:8092/udp"
+      - "8094:8094"
+      - "8125:8125/udp"
+```
+
+После настройке перезапустите telegraf, обновите веб интерфейс и приведите скриншотом список `measurments` в 
+веб-интерфейсе базы telegraf.autogen . Там должны появиться метрики, связанные с docker.
+
+Факультативно можете изучить какие метрики собирает telegraf после выполнения данного задания.
+
+## Решение 9
+
+В актуальной версии репозитория ```influxdata/sandbox``` плагин ```inputs.docker```, указанный в задании, уже присутствует в конфигурационном файле ```telegraf/telegraf.conf```. 
+Также в ```docker-compose.yml``` уже настроено подключение ```/var/run/docker.sock``` к контейнеру Telegraf. Поэтому дополнительное добавление плагина и изменение ```docker-compose.yml``` не потребовались.
+
+После запуска Telegraf в Chronograf автоматически появились Docker-метрики (```docker```, ```docker_container_cpu```, ```docker_container_mem```, ```docker_container_net```, ```docker_container_blkio```, ```docker_container_status```), что подтверждает корректную работу плагина inputs.docker:
+
+![img](img/image10.png)
+
+При запуске контейнера Telegraf была выявлена несовместимость конфигурации из репозитория с используемой актуальной версией Telegraf 1.39.3. Параметры ```container_names```, ```perdevice``` и ```total``` плагина ```inputs.docker``` больше не поддерживаются данной версией и приводили к завершению контейнера с ошибкой. 
+Устаревшие параметры были удалены из ```telegraf/telegraf.conf```, после чего контейнер Telegraf успешно запустился и начал передавать Docker-метрики в InfluxDB.
