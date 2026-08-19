@@ -1,45 +1,53 @@
-![GitHub](https://img.shields.io/badge/GitHub-Repository-black)
-![Course](https://img.shields.io/badge/Course-DevOps-blue)
-![Platform](https://img.shields.io/badge/Platform-Netology-green)
+# Домашнее задание по теме "Средство визуализации Grafana" Ячмень Марк Викторович
 
+## Задание 1
 
+Вам необходимо поднять в докере и связать между собой:
 
-# Домашние задания по курсу "Devops-инженер с нуля: расширенный курс" от Нетологии
+- elasticsearch (hot и warm ноды);
+- logstash;
+- kibana;
+- filebeat.
 
-## Модуль "IT-системы и операционная система Linux" [сертификат](Electronic_certificate/SLINA-51-9785269.pdf)
+Logstash следует сконфигурировать для приёма по tcp json-сообщений.
 
-- [Архитектура компьютера. Операционная система](Materials/Computer_architecture_Operating_system.pdf) ([docx](Materials/Computer_architecture_Operating_system.docx))
-- [Знакомство с операционной системой Linux](Materials/Introduction_to_the_Linux_operating_system.pdf) ([docx](Materials/Introduction_to_the_Linux_operating_system.docx))
-- [Основы работы в терминалe ОС Linux](Materials/Basics_of_working_in_the_Linux_OS_terminal.pdf) ([docx](Materials/Basics_of_working_in_the_Linux_OS_terminal.docx))
+Filebeat следует сконфигурировать для отправки логов docker вашей системы в logstash.
 
-## Модуль "Операционная система Linux" [сертификат](Electronic_certificate/SLINB-51-9785269.pdf)
+В директории help находится манифест docker-compose и конфигурации filebeat/logstash для быстрого 
+выполнения этого задания.
 
-- [Процессы, управление процессами](Materials/Linux_operating_system/Processes_process_management.pdf) ([docx](Materials/Linux_operating_system/Processes_process_management.docx))
-- [Дисковые системы](Materials/Linux_operating_system/Disk_systems.pdf) ([docx](Materials/Linux_operating_system/Disk_systems.docx))
+Результатом выполнения задания должны быть:
 
-## Модуль "Администрирование операционной системы Linux" [сертификат](Electronic_certificate/)
+- скриншот `docker ps` через 5 минут после старта всех контейнеров (их должно быть 5);
+- скриншот интерфейса kibana;
+- docker-compose манифест (если вы не использовали директорию help);
+- ваши yml-конфигурации для стека (если вы не использовали директорию help).
 
-## Модуль "Программирование на Bash" [сертификат](Electronic_certificate/)
+## Решение 1
 
-## Модуль "Сеть, сетевые протоколы" [сертификат](Electronic_certificate/)
+Для выполнения задания выполним следующие действия.
 
-## Модуль "Виртуализация" [сертификат](Electronic_certificate/)
+Подготовим виртуальную машину с помощью Vagrant. В директории с Vagrant проектом создадим Vagrant файл следующего содержания:
 
-## Модуль "Автоматизация и CI/СD" [сертификат](Electronic_certificate/)
+```
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/jammy64"
+  config.vm.hostname = "grafana-lab"
 
-## Модуль "Мониторинг" [сертификат](Electronic_certificate/SLINA-51-9785269.pdf)
+  config.vm.network "forwarded_port", guest: 3000, host: 3000
+  config.vm.network "forwarded_port", guest: 9090, host: 9090
 
-## Модуль "Отказоустойчивость" [сертификат](Electronic_certificate/)
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = "grafana-lab"
+    vb.memory = 2048
+    vb.cpus = 2
+  end
+end
+```
 
-## Модуль "Системы хранения и передачи данных" [сертификат](Electronic_certificate/)
+Запустим виртуальную машину ```grafana-lab```:
 
-## Модуль "Реляционные базы данных и администрирование баз данных" [сертификат](Electronic_certificate/)
-
-## Модуль "Информационная безопасность" [сертификат](Electronic_certificate/)
-
-
-## Модуль "Системы управления версиями" [сертификат](Electronic_certificate/)
-
-- [Системы контроля версий](../../tree/hw-Version_control_systems)
-- [Основы Git](../../tree/hw-Git_fundamentals)
-- [Инструменты Git](../../tree/hw-Git_tools)
+```
+vagrant up
+```
+![img](img/image1.png)
