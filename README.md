@@ -177,4 +177,21 @@ message.keyword : "ERROR:root:OH NO!!!!!!"
 
 и увидим отфильтрованные записи о событиях:
 
+![img](img/image15.png)
 
+Создадим ещё один Data View со следующими параметрами:
+
+```
+Name: logstash-2026
+Index pattern: logstash-2026.*
+Timestamp field: @timestamp
+```
+
+![img](img/image16.png)
+
+В Kibana созданы Data Views для доступа к индексам Elasticsearch:
+
+```logstash``` с шаблоном ```logstash-*```;
+```logstash-2026``` с более узким шаблоном ```logstash-2026.*```.
+
+В качестве временного поля используется @timestamp. Data View logstash установлен по умолчанию. Созданные представления позволяют обращаться к индексам Elasticsearch по различным шаблонам.
