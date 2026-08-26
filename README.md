@@ -448,7 +448,7 @@ spec:
             - containerPort: 80
 ```
 
-Применим Deployment с init-контейнером::
+Применим Deployment с init-контейнером:
 
 ```
 kubectl apply -f deployment-init.yaml
