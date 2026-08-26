@@ -387,6 +387,8 @@ curl http://nginx-multitool-service
 curl http://nginx-multitool-service:1180
 ```
 
+![img](img/image20.png)
+
 Оба запроса из отдельного Pod `multitool-client` выполнены успешно.
 
 Запрос к Service на порт `80` вернул стандартную страницу `nginx`, а запрос на порт `1180` — ответ приложения `network-multitool`.
@@ -394,3 +396,88 @@ curl http://nginx-multitool-service:1180
 Таким образом, Service `nginx-multitool-service` обеспечивает доступ к репликам Deployment из другого Pod по DNS-имени сервиса.
 
 Все пункты задания 1 выполнены: создан Deployment с двумя контейнерами, устранён конфликт портов, приложение масштабировано до двух реплик, создан Service и подтверждён доступ к приложениям из отдельного Pod.
+
+
+
+## Задание 2. Создать Deployment и обеспечить старт основного контейнера при выполнении условий
+
+1. Создать Deployment приложения nginx и обеспечить старт контейнера только после того, как будет запущен сервис этого приложения.
+2. Убедиться, что nginx не стартует. В качестве Init-контейнера взять busybox.
+3. Создать и запустить Service. Убедиться, что Init запустился.
+4. Продемонстрировать состояние пода до и после запуска сервиса.
+
+
+## Решение 2
+
+Создадим Deployment приложения `nginx` с init-контейнером на базе `busybox`.
+
+Init-контейнер будет проверять наличие DNS-имени Service `nginx-init-service` и завершится только после его появления.
+
+Создадим файл манифеста следующего содержания:
+
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-init
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-init
+  template:
+    metadata:
+      labels:
+        app: nginx-init
+    spec:
+      initContainers:
+        - name: wait-for-service
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nslookup nginx-init-service; do
+                echo "Waiting for nginx-init-service..."
+                sleep 5
+              done
+      containers:
+        - name: nginx
+          image: nginx:1.29
+          ports:
+            - containerPort: 80
+```
+
+Применим Deployment с init-контейнером::
+
+```
+kubectl apply -f deployment-init.yaml
+```
+
+![img](img/image21.png)
+
+Проверим состояние Pod:
+
+```
+kubectl get pods
+```
+
+![img](img/image22.png)
+
+Pod nginx-init находится в состоянии Init:0/1, то есть init-контейнер ещё не завершил работу, а основной контейнер nginx пока не запущен.
+
+Проверим логи init-контейнера:
+
+```
+kubectl logs deployment/nginx-init -c wait-for-service
+```
+
+![img](img/image23.png)
+
+В логах видим, что DNS-имя ```nginx-init-service``` не разрешается:
+
+```
+** server can't find nginx-init-service.default.svc.cluster.local: NXDOMAIN
+```
+
+Таким образом, init-контейнер ожидает появления Service, и до его появления основной контейнер ```nginx``` не запускается.
