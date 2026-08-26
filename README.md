@@ -339,7 +339,7 @@ Service `nginx-multitool-service` успешно создан и получил 
 В списке endpoints присутствуют обе реплики приложения (`10.1.100.4` и `10.1.100.5`), следовательно Service корректно направляет трафик на созданные Pod.
 
 
-Приступим к созданию отдельный Pod с приложением ```multitool```.
+Приступим к созданию отдельного Pod с приложением ```multitool```.
 Создадим файл ```pod.yaml``` следующего содержания:
 
 ```
@@ -413,7 +413,7 @@ curl http://nginx-multitool-service:1180
 
 Init-контейнер будет проверять наличие DNS-имени Service `nginx-init-service` и завершится только после его появления.
 
-Создадим файл манифеста следующего содержания:
+Создадим файл манифеста ```deployment-init.yaml``` следующего содержания:
 
 ```
 apiVersion: apps/v1
@@ -481,3 +481,57 @@ kubectl logs deployment/nginx-init -c wait-for-service
 ```
 
 Таким образом, init-контейнер ожидает появления Service, и до его появления основной контейнер ```nginx``` не запускается.
+
+Создадим Service `nginx-init-service`, появления которого ожидает init-контейнер:
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-init-service
+spec:
+  selector:
+    app: nginx-init
+  ports:
+    - port: 80
+      targetPort: 80
+```
+
+Создадим Service для приложения `nginx`:
+
+```
+kubectl apply -f service-init.yaml
+```
+
+![img](img/image24.png)
+
+Проверим состояние Service, Pod и Deployment:
+
+```
+kubectl get services
+kubectl get pods
+kubectl get deployments
+```
+
+![img](img/image25.png)
+
+После появления Service init-контейнер успешно завершил работу, основной контейнер `nginx` был запущен, а Pod перешёл в состояние `Running`.
+
+Проверим состояние init-контейнера:
+
+```
+kubectl get pod nginx-init-7bc67cc899-25zx8 -o jsonpath='{.status.initContainerStatuses[0].state.terminated.reason}{"\n"}'
+```
+
+![img](img/image26.png)
+
+Проверим логи init-контейнера:
+
+```
+kubectl logs nginx-init-7bc67cc899-25zx8 -c wait-for-service
+```
+
+![img](img/image27.png)
+
+Таким образом, init-контейнер блокировал запуск основного контейнера до появления необходимого Service. После успешного разрешения DNS-имени Service init-контейнер завершился со статусом `Completed`, после чего был запущен основной контейнер `nginx`.
+
