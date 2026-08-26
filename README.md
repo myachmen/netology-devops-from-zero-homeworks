@@ -437,7 +437,7 @@ spec:
             - sh
             - -c
             - |
-              until nslookup nginx-init-service; do
+              until nslookup nginx-init-service.default.svc.cluster.local.; do
                 echo "Waiting for nginx-init-service..."
                 sleep 5
               done
@@ -535,3 +535,10 @@ kubectl logs nginx-init-7bc67cc899-25zx8 -c wait-for-service
 
 Таким образом, init-контейнер блокировал запуск основного контейнера до появления необходимого Service. После успешного разрешения DNS-имени Service init-контейнер завершился со статусом `Completed`, после чего был запущен основной контейнер `nginx`.
 
+## Манифесты
+
+- [deployment.yaml](manifests/deployment.yaml)
+- [service.yaml](manifests/service.yaml)
+- [pod.yaml](manifests/pod.yaml)
+- [deployment-init.yaml](manifests/deployment-init.yaml)
+- [service-init.yaml](manifests/service-init.yaml)
