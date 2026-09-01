@@ -196,3 +196,50 @@ DNS Kubernetes успешно разрешает имя `multi-container-service
 
 Таким образом, доступ к контейнерам приложения по разным портам из другого Pod внутри кластера обеспечен.
 
+Для обеспечения доступа к приложению с локального компьютера создадим Service типа `NodePort`.
+
+Создадим файл манифеста `service-nodeport.yaml` следующего содержания:
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-nodeport
+spec:
+  type: NodePort
+  selector:
+    app: multi-container
+  ports:
+    - name: nginx
+      port: 80
+      targetPort: 80
+      protocol: TCP
+```
+
+Проверим и применим манифест:
+
+```
+kubectl apply --dry-run=client -f ~/manifests/service-nodeport.yaml
+kubectl apply -f ~/manifests/service-nodeport.yaml
+```
+
+![img](img/image10.png)
+
+Проверим созданный Service:
+
+```
+kubectl get services
+kubectl describe service nginx-nodeport
+```
+
+![img](img/image11.png)
+
+Проверим доступ к `nginx` с локального компьютера:
+
+```
+curl.exe http://192.168.56.10:30088
+```
+
+![img](img/image12.png)
+
+В результате `curl` успешно получил страницу `nginx`, а `Test-NetConnection` подтвердил доступность TCP-порта `30088`.
