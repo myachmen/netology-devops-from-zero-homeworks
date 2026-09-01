@@ -1,12 +1,11 @@
 # Домашнее задание по теме "Сетевое взаимодействие в K8S" Ячмень Марк Викторович
 
-## Задание 1. Создать Deployment и обеспечить доступ к контейнерам приложения по разным портам из другого Pod внутри кластера
+## Задание 1. Настройка Service (ClusterIP и NodePort)
 
-1. Создать Deployment приложения, состоящего из двух контейнеров (nginx и multitool), с количеством реплик 3 шт.
-2. Создать Service, который обеспечит доступ внутри кластера до контейнеров приложения из п.1 по порту 9001 — nginx 80, по 9002 — multitool 8080.
-3. Создать отдельный Pod с приложением multitool и убедиться с помощью `curl`, что из пода есть доступ до приложения из п.1 по разным портам в разные контейнеры.
-4. Продемонстрировать доступ с помощью `curl` по доменному имени сервиса.
-5. Предоставить манифесты Deployment и Service в решении, а также скриншоты или вывод команды п.4.
+Развернуть приложение из двух контейнеров (nginx и multitool) и обеспечить доступ к ним:
+
+ - Внутри кластера через ClusterIP.
+ - Снаружи через NodePort.
 
 
 ## Решение 1
@@ -238,8 +237,222 @@ kubectl describe service nginx-nodeport
 
 ```
 curl.exe http://192.168.56.10:30088
+Test-NetConnection 192.168.56.10 -Port 30088
 ```
 
 ![img](img/image12.png)
 
 В результате `curl` успешно получил страницу `nginx`, а `Test-NetConnection` подтвердил доступность TCP-порта `30088`.
+
+
+
+## Задание 2. Настройка Ingress
+
+Развернуть два приложения (frontend и backend) и обеспечить доступ к ним через Ingress по разным путям.
+
+
+## Решение 2
+
+Создадим два файла манифеста следующего содержания.
+
+`deployment-frontend.yaml`:
+
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27
+          ports:
+            - containerPort: 80
+```
+
+`deployment-backend.yaml`:
+
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: multitool
+          image: wbitt/network-multitool
+          ports:
+            - containerPort: 80
+```
+
+
+Проверим и применим манифесты:
+
+```
+kubectl apply --dry-run=client -f ~/manifests/deployment-frontend.yaml
+kubectl apply --dry-run=client -f ~/manifests/deployment-backend.yaml
+
+kubectl apply -f ~/manifests/deployment-frontend.yaml
+kubectl apply -f ~/manifests/deployment-backend.yaml
+```
+
+![img](img/image13.png)
+
+Проверим:
+
+```
+kubectl get deployments
+kubectl get pods -o wide
+```
+
+![img](img/image14.png)
+
+Создадим два файла манифеста следующего содержания.
+
+`service-frontend.yaml`:
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  selector:
+    app: frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+```
+
+`service-backend.yaml`:
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  selector:
+    app: backend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+```
+
+Проверим и применим манифесты:
+
+```
+kubectl apply --dry-run=client -f ~/manifests/service-frontend.yaml
+kubectl apply --dry-run=client -f ~/manifests/service-backend.yaml
+
+kubectl apply -f ~/manifests/service-frontend.yaml
+kubectl apply -f ~/manifests/service-backend.yaml
+```
+
+![img](img/image15.png)
+
+Проверим:
+
+```
+kubectl get services
+
+kubectl describe service frontend-service
+kubectl describe service backend-service
+```
+
+![img](img/image16.png)
+
+Включим Ingress-controller в MicroK8s:
+
+```
+microk8s enable ingress
+```
+
+Проверим:
+
+```
+microk8s status
+```
+
+![img](img/image17.png)
+
+![img](img/image18.png)
+
+Создадим файл манифеста `ingress.yaml` следующего содержания:
+
+```
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-ingress
+spec:
+  ingressClassName: public
+  rules:
+    - http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 80
+
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 80
+```
+
+Проверим и применим манифест:
+
+```
+kubectl apply --dry-run=client -f ~/manifests/ingress.yaml
+kubectl apply -f ~/manifests/ingress.yaml
+```
+
+![img](img/image19.png)
+
+Проверим:
+
+```
+kubectl get ingress
+kubectl describe ingress app-ingress
+```
+
+![img](img/image20.png)
+
+Проверим, как именно Traefik опубликован наружу:
+
+```
+kubectl get pods -n ingress
+kubectl get services -n ingres
+```
+
+![img](img/image21.png)
+
