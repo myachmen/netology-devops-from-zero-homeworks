@@ -407,6 +407,8 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: app-ingress
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: default-strip-api@kubernetescrd
 spec:
   ingressClassName: public
   rules:
@@ -451,8 +453,41 @@ kubectl describe ingress app-ingress
 
 ```
 kubectl get pods -n ingress
-kubectl get services -n ingres
+kubectl get services -n ingress
 ```
 
 ![img](img/image21.png)
 
+Для корректной обработки маршрута `/api` в текущей версии MicroK8s был использован Traefik Middleware `StripPrefix`, так как Ingress Controller работает на базе Traefik.
+
+Создадим Middleware.
+Создадим файл манифеста `middleware-strip-api.yaml` следующего содержания:
+
+```
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-api
+spec:
+  stripPrefix:
+    prefixes:
+      - /api
+```
+
+Проверим и применим манифест:
+
+```
+kubectl apply --dry-run=client -f ~/manifests/middleware-strip-api.yaml
+kubectl apply -f ~/manifests/middleware-strip-api.yaml
+```
+
+![img](img/image22.png)
+
+После применения конфигурации проверим маршрутизацию с локального компьютера:
+
+```
+curl.exe http://192.168.56.10:30710/
+curl.exe http://192.168.56.10:30710/api
+```
+
+![img](img/image23.png)
