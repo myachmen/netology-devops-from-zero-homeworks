@@ -37,6 +37,8 @@ kubectl delete service nginx-init-service nginx-multitool-service
 
 ![img](img/image2.png)
 
+После удаления ресурсов предыдущей домашней работы в namespace `default` остался только стандартный Service `kubernetes`.
+
 Создадим файл манифеста `deployment-multi-container.yaml` следующего содержания:
 
 ```
@@ -87,7 +89,12 @@ kubectl get pods -o wide
 
 ![img](img/image4.png)
 
-Приступим к созданию Service.
+Deployment успешно создан. Запущены три Pod, каждый из которых содержит два контейнера (`2/2 Running`).
+
+Создадим Service типа `ClusterIP`, который обеспечит доступ к контейнерам приложения:
+- порт `9001` Service направляется на порт `80` контейнера `nginx`;
+- порт `9002` Service направляется на порт `8080` контейнера `multitool`.
+
 Создадим файл манифеста `service-clusterip.yaml` следующего содержания:
 
 ```
@@ -113,7 +120,7 @@ spec:
 
 ```
 kubectl apply --dry-run=client -f ~/manifests/service-clusterip.yaml
-kubectl apply -f ~/manifests/service-clusterip.yaml
+kubectl apply -f ~/manifests/deployment-multi-container.yaml
 ```
 
 ![img](img/image5.png)
@@ -126,6 +133,12 @@ kubectl describe service multi-container-service
 ```
 
 ![img](img/image6.png)
+
+Service типа `ClusterIP` успешно создан. По селектору `app=multi-container` он обнаружил все три Pod приложения.
+
+Настроено перенаправление:
+- `9001/TCP` → `80/TCP` (`nginx`);
+- `9002/TCP` → `8080/TCP` (`multitool`).
 
 Создадим тестовый Pod:
 
@@ -146,29 +159,40 @@ kubectl get pod multitool-client
 
 ![img](img/image8.png)
 
-Заходим внутрь созданного Pod:
+Подключимся к созданному Pod:
 
 ```
 kubectl exec -it multitool-client -- bash
 ```
 
-Внутри Pod выполним две проверки.
-Для nginx:
+Из Pod проверим доступ к обоим контейнерам по доменному имени Service.
+
+Для `nginx`:
 
 ```
 curl multi-container-service:9001
 ```
 
-Для multitool:
+Для `multitool`:
 
 ```
 curl multi-container-service:9002
 ```
 
-DNS-разрешение имени Service:
+Дополнительно проверим DNS-разрешение имени Service:
 
 ```
 nslookup multi-container-service
 ```
 
 ![img](img/image9.png)
+
+Проверка показала, что по доменному имени `multi-container-service` доступны оба контейнера приложения:
+
+- `multi-container-service:9001` — `nginx`;
+- `multi-container-service:9002` — `network-multitool`.
+
+DNS Kubernetes успешно разрешает имя `multi-container-service` в полное имя `multi-container-service.default.svc.cluster.local` и ClusterIP Service.
+
+Таким образом, доступ к контейнерам приложения по разным портам из другого Pod внутри кластера обеспечен.
+
