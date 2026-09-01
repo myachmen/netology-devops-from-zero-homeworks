@@ -120,7 +120,7 @@ spec:
 
 ```
 kubectl apply --dry-run=client -f ~/manifests/service-clusterip.yaml
-kubectl apply -f ~/manifests/deployment-multi-container.yaml
+kubectl apply -f ~/manifests/service-clusterip.yaml
 ```
 
 ![img](img/image5.png)
