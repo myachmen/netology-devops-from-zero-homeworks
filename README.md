@@ -75,7 +75,7 @@ spec:
 
 ```
 kubectl apply --dry-run=client -f ~/manifests/deployment-multi-container.yaml
-kubectl apply -f deployment-multi-container.yaml
+kubectl apply -f ~/manifests/deployment-multi-container.yaml
 ```
 
 ![img](img/image3.png)
