@@ -79,7 +79,7 @@ kubectl apply -f ~/manifests/deployment-multi-container.yaml
 
 ![img](img/image3.png)
 
-Проверим Deployment и созданные им Pod'ы:
+Проверим Deployment и созданные им Pod:
 
 ```
 kubectl get deployments
@@ -243,7 +243,7 @@ Test-NetConnection 192.168.56.10 -Port 30088
 ![img](img/image12.png)
 
 В результате `curl` успешно получил страницу `nginx`, а `Test-NetConnection` подтвердил доступность TCP-порта `30088`.
-
+Таким образом, приложение доступно внутри кластера через Service типа `ClusterIP`, а `nginx` доступен с локального компьютера через Service типа `NodePort`.
 
 
 ## Задание 2. Настройка Ingress
@@ -325,6 +325,8 @@ kubectl get pods -o wide
 
 ![img](img/image14.png)
 
+Оба Deployment успешно созданы. Pod `frontend` с контейнером `nginx` и Pod `backend` с контейнером `network-multitool` находятся в состоянии `Running`.
+
 Создадим два файла манифеста следующего содержания.
 
 `service-frontend.yaml`:
@@ -396,8 +398,6 @@ microk8s enable ingress
 microk8s status
 ```
 
-![img](img/image17.png)
-
 ![img](img/image18.png)
 
 Создадим файл манифеста `ingress.yaml` следующего содержания:
@@ -458,7 +458,7 @@ kubectl get services -n ingress
 
 ![img](img/image21.png)
 
-Для корректной обработки маршрута `/api` в текущей версии MicroK8s был использован Traefik Middleware `StripPrefix`, так как Ingress Controller работает на базе Traefik.
+В текущей версии MicroK8s в качестве Ingress Controller используется Traefik. Поэтому вместо аннотации `nginx.ingress.kubernetes.io/rewrite-target`, приведённой в шаблоне задания, для обработки маршрута `/api` используем Traefik Middleware `StripPrefix`, удаляющий префикс `/api` перед передачей запроса backend-приложению.
 
 Создадим Middleware.
 Создадим файл манифеста `middleware-strip-api.yaml` следующего содержания:
@@ -491,3 +491,28 @@ curl.exe http://192.168.56.10:30710/api
 ```
 
 ![img](img/image23.png)
+
+Проверка показала, что маршрутизация через Ingress работает корректно:
+
+- запрос к `/` направляется в `frontend-service` и возвращает страницу `nginx`;
+- запрос к `/api` направляется в `backend-service`, при этом Middleware `StripPrefix` удаляет префикс `/api`, после чего получен ответ от `network-multitool`.
+
+Таким образом, доступ к приложениям `frontend` и `backend` через Ingress по разным путям успешно настроен.
+
+
+## Ссылки на манифесты
+
+### Задание 1
+
+- [deployment-multi-container.yaml](manifests/deployment-multi-container.yaml)
+- [service-clusterip.yaml](manifests/service-clusterip.yaml)
+- [service-nodeport.yaml](manifests/service-nodeport.yaml)
+
+### Задание 2
+
+- [deployment-frontend.yaml](manifests/deployment-frontend.yaml)
+- [deployment-backend.yaml](manifests/deployment-backend.yaml)
+- [service-frontend.yaml](manifests/service-frontend.yaml)
+- [service-backend.yaml](manifests/service-backend.yaml)
+- [ingress.yaml](manifests/ingress.yaml)
+- [middleware-strip-api.yaml](manifests/middleware-strip-api.yaml)
