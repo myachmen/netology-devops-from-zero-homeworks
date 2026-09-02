@@ -133,6 +133,8 @@ kubectl describe service multi-container-service
 
 ![img](img/image6.png)
 
+Оба Service типа `ClusterIP` успешно созданы и связаны с соответствующими Pod по селекторам `app=frontend` и `app=backend`.
+
 Service типа `ClusterIP` успешно создан. По селектору `app=multi-container` он обнаружил все три Pod приложения.
 
 Настроено перенаправление:
@@ -396,6 +398,8 @@ microk8s enable ingress
 
 ```
 microk8s status
+kubectl get pods -n ingress
+kubectl get services -n ingress
 ```
 
 ![img](img/image18.png)
