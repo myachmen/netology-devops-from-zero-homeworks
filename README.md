@@ -388,6 +388,8 @@ kubectl describe service backend-service
 
 ![img](img/image16.png)
 
+Оба Service типа `ClusterIP` успешно созданы и связаны с соответствующими Pod по селекторам `app=frontend` и `app=backend`.
+
 Включим Ingress-controller в MicroK8s:
 
 ```
