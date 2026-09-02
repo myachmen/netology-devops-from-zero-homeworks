@@ -133,8 +133,6 @@ kubectl describe service multi-container-service
 
 ![img](img/image6.png)
 
-Оба Service типа `ClusterIP` успешно созданы и связаны с соответствующими Pod по селекторам `app=frontend` и `app=backend`.
-
 Service типа `ClusterIP` успешно создан. По селектору `app=multi-container` он обнаружил все три Pod приложения.
 
 Настроено перенаправление:
@@ -405,6 +403,32 @@ kubectl get services -n ingress
 ```
 
 ![img](img/image18.png)
+
+В текущей версии MicroK8s в качестве Ingress Controller используется Traefik. Поэтому вместо аннотации `nginx.ingress.kubernetes.io/rewrite-target`, приведённой в шаблоне задания, для обработки маршрута `/api` используем Traefik Middleware `StripPrefix`, удаляющий префикс `/api` перед передачей запроса backend-приложению.
+
+Создадим Middleware.
+
+Создадим файл манифеста `middleware-strip-api.yaml` следующего содержания:
+
+```
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-api
+spec:
+  stripPrefix:
+    prefixes:
+      - /api
+```
+
+Проверим и применим манифест:
+
+```
+kubectl apply --dry-run=client -f ~/manifests/middleware-strip-api.yaml
+kubectl apply -f ~/manifests/middleware-strip-api.yaml
+```
+
+![img](img/image22.png)
 
 Создадим файл манифеста `ingress.yaml` следующего содержания:
 
