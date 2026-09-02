@@ -191,7 +191,7 @@ nslookup multi-container-service
 - `multi-container-service:9001` — `nginx`;
 - `multi-container-service:9002` — `network-multitool`.
 
-DNS Kubernetes успешно разрешает имя `multi-container-service` в полное имя `multi-container-service.default.svc.cluster.local` и ClusterIP Service.
+DNS Kubernetes успешно разрешает имя `multi-container-service` в полное доменное имя `multi-container-service.default.svc.cluster.local` и соответствующий ClusterIP Service.
 
 Таким образом, доступ к контейнерам приложения по разным портам из другого Pod внутри кластера обеспечен.
 
@@ -243,6 +243,7 @@ Test-NetConnection 192.168.56.10 -Port 30088
 ![img](img/image12.png)
 
 В результате `curl` успешно получил страницу `nginx`, а `Test-NetConnection` подтвердил доступность TCP-порта `30088`.
+
 Таким образом, приложение доступно внутри кластера через Service типа `ClusterIP`, а `nginx` доступен с локального компьютера через Service типа `NodePort`.
 
 
@@ -406,7 +407,7 @@ kubectl get services -n ingress
 
 В текущей версии MicroK8s в качестве Ingress Controller используется Traefik. Поэтому вместо аннотации `nginx.ingress.kubernetes.io/rewrite-target`, приведённой в шаблоне задания, для обработки маршрута `/api` используем Traefik Middleware `StripPrefix`, удаляющий префикс `/api` перед передачей запроса backend-приложению.
 
-Создадим Middleware.
+Создадим Middleware `StripPrefix`.
 
 Создадим файл манифеста `middleware-strip-api.yaml` следующего содержания:
 
@@ -487,31 +488,6 @@ kubectl get services -n ingress
 ```
 
 ![img](img/image21.png)
-
-В текущей версии MicroK8s в качестве Ingress Controller используется Traefik. Поэтому вместо аннотации `nginx.ingress.kubernetes.io/rewrite-target`, приведённой в шаблоне задания, для обработки маршрута `/api` используем Traefik Middleware `StripPrefix`, удаляющий префикс `/api` перед передачей запроса backend-приложению.
-
-Создадим Middleware.
-Создадим файл манифеста `middleware-strip-api.yaml` следующего содержания:
-
-```
-apiVersion: traefik.io/v1alpha1
-kind: Middleware
-metadata:
-  name: strip-api
-spec:
-  stripPrefix:
-    prefixes:
-      - /api
-```
-
-Проверим и применим манифест:
-
-```
-kubectl apply --dry-run=client -f ~/manifests/middleware-strip-api.yaml
-kubectl apply -f ~/manifests/middleware-strip-api.yaml
-```
-
-![img](img/image22.png)
 
 После применения конфигурации проверим маршрутизацию с локального компьютера:
 
