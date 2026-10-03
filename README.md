@@ -158,3 +158,27 @@ microk8s kubectl exec "$POD" -c multitool -- curl -s http://nginx-service
 
 Таким образом, ConfigMap успешно подключён к контейнеру `nginx`,
 а доступ к веб-странице через Service из второго контейнера работает корректно.
+
+
+
+## Задание 2. Настройка HTTPS с Secrets
+
+Развернуть приложение с доступом по HTTPS, используя самоподписанный сертификат.
+
+## Решение 2
+
+Сгенерируем сертификат. 
+Для этого выполним команду:
+
+```
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout tls.key -out tls.crt -subj "/CN=myapp.example.com"
+```
+
+Проверим, что файлы появились и посмотрим параметры сертификата:
+
+```
+ls -l tls.key tls.crt
+openssl x509 -in tls.crt -noout -subject -issuer -dates
+```
+
+![img](img/image8.png)
