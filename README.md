@@ -245,3 +245,12 @@ microk8s kubectl apply --dry-run=client -f ingress-tls.yaml
 ```
 
 ![img](img/image11.png)
+
+Применим манифест `ingress-tls.yaml` и проверим:
+
+```
+microk8s kubectl apply -f ingress-tls.yaml
+microk8s kubectl get ingress
+```
+
+![img](img/image12.png)
