@@ -281,3 +281,77 @@ Secret `tls-secret` с самоподписанным сертификатом.
 
 Таким образом, доступ к приложению по HTTPS через Ingress настроен и
 работает корректно.
+
+
+
+## Задание 3. Настройка RBAC
+
+Создать пользователя с ограниченными правами (только просмотр логов и описания подов).
+
+## Решение 3
+
+Включим RBAC:
+
+```
+microk8s enable rbac
+```
+
+Проверим и убедимся, что кластер после изменения нормально отвечает:
+
+```
+microk8s status
+microk8s kubectl get pods
+```
+
+![img](img/image14.png)
+
+Создадим ключ и CSR пользователя `developer`:
+
+```
+openssl genrsa -out developer.key 2048
+```
+
+Создадим запрос на сертификат:
+
+```
+openssl req -new -key developer.key -out developer.csr -subj "/CN=developer"
+```
+
+Проверим CSR:
+
+```
+openssl req -in developer.csr -noout -subject
+```
+
+![img](img/image15.png)
+
+Подпишем CSR пользователя `developer`:
+
+```
+sudo openssl x509 -req \
+  -in developer.csr \
+  -CA /var/snap/microk8s/current/certs/ca.crt \
+  -CAkey /var/snap/microk8s/current/certs/ca.key \
+  -CAcreateserial \
+  -out developer.crt \
+  -days 365 \
+  -sha256
+```
+
+Проверим полученный сертификат:
+
+```
+openssl x509 -in developer.crt -noout -subject -issuer -dates
+```
+
+Проверим, что сертификат действительно доверен CA MicroK8s:
+
+```
+sudo openssl verify \
+  -CAfile /var/snap/microk8s/current/certs/ca.crt \
+  developer.crt
+```
+
+![img](img/image16.png)
+
+
