@@ -354,4 +354,49 @@ sudo openssl verify \
 
 ![img](img/image16.png)
 
+Создадим манифест `role-pod-reader.yaml` следующего содержания:
+
+```
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-reader
+  namespace: default
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+      - pods/log
+    verbs:
+      - get
+      - list
+      - watch
+```
+
+Создадим манифест `rolebinding-developer.yaml` следующего содержания:
+
+```
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developer-pod-reader
+  namespace: default
+subjects:
+  - kind: User
+    name: developer
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
+```
+
+Проверим манифесты:
+
+```
+microk8s kubectl apply --dry-run=client -f role-pod-reader.yaml
+microk8s kubectl apply --dry-run=client -f rolebinding-developer.yaml
+```
+
+
 
