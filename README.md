@@ -398,5 +398,5 @@ microk8s kubectl apply --dry-run=client -f role-pod-reader.yaml
 microk8s kubectl apply --dry-run=client -f rolebinding-developer.yaml
 ```
 
-
+![img](img/image17.png)
 
