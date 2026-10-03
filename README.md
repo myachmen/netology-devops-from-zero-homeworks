@@ -199,3 +199,16 @@ microk8s kubectl describe secret tls-secret
 ```
 
 ![img](img/image10.png)
+
+Создадим манифест `secret-tls.yaml` следующего содержания:
+
+```
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tls-secret
+type: kubernetes.io/tls
+data:
+  tls.crt: <BASE64_CERTIFICATE>
+  tls.key: <BASE64_PRIVATE_KEY>
+```
