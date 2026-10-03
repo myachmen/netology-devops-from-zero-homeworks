@@ -8,7 +8,7 @@
 
 Для выполнения домашнего задания будем использовать виртуальную машину `k8s-lab` с MicroK8s, подготовленную в рамках предыдущей домашней работы.
 
-Создадим манифест `cconfigmap-web.yaml` следующего содержания:
+Создадим манифест `configmap-web.yaml` следующего содержания:
 
 ```
 apiVersion: v1
@@ -55,8 +55,11 @@ spec:
               mountPath: /usr/share/nginx/html/index.html
               subPath: index.html
 
-        - name: multitool
+         - name: multitool
           image: wbitt/network-multitool
+          env:
+            - name: HTTP_PORT
+              value: "8080"
           ports:
             - containerPort: 8080
 
@@ -129,7 +132,7 @@ microk8s kubectl get configmap nginx-config -o yaml
 ```
 POD=$(microk8s kubectl get pods -l app=nginx-multitool -o jsonpath='{.items[0].metadata.name}')
 echo $POD
-````
+```
 
 ![img](img/image5.png)
 
@@ -147,3 +150,11 @@ microk8s kubectl exec "$POD" -c nginx -- cat /usr/share/nginx/html/index.html
 ```
 microk8s kubectl exec "$POD" -c multitool -- curl -s http://nginx-service
 ```
+
+В результате обращения из контейнера `multitool` к сервису `nginx-service`
+получена HTML-страница, содержимое которой было задано в ConfigMap.
+
+![img](img/image7.png)
+
+Таким образом, ConfigMap успешно подключён к контейнеру `nginx`,
+а доступ к веб-странице через Service из второго контейнера работает корректно.
