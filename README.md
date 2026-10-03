@@ -212,3 +212,36 @@ data:
   tls.crt: <BASE64_CERTIFICATE>
   tls.key: <BASE64_PRIVATE_KEY>
 ```
+
+Создадим манифест `ingress-tls.yaml` следующего содержания:
+
+```
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-tls-ingress
+spec:
+  tls:
+    - hosts:
+        - myapp.example.com
+      secretName: tls-secret
+  rules:
+    - host: myapp.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx-service
+                port:
+                  number: 80
+```
+
+Проверим манифест:
+
+```
+microk8s kubectl apply --dry-run=client -f ingress-tls.yaml
+```
+
+![img](img/image11.png)
