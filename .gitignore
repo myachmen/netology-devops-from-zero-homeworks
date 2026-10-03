@@ -3,3 +3,4 @@
 
 # Locally generated certificate requests
 *.csr
+*.crt
