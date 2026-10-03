@@ -251,6 +251,20 @@ microk8s kubectl apply --dry-run=client -f ingress-tls.yaml
 ```
 microk8s kubectl apply -f ingress-tls.yaml
 microk8s kubectl get ingress
+microk8s kubectl describe ingress nginx-tls-ingress
 ```
 
 ![img](img/image12.png)
+
+Проверим доступ к приложению по HTTPS через Ingress.
+
+Так как в виртуальной машине настроен HTTP/HTTPS proxy, для локального
+обращения к Ingress исключим использование proxy с помощью параметра
+`--noproxy`. Параметр `--resolve` используется для сопоставления имени
+`myapp.example.com` с IP-адресом виртуальной машины без изменения DNS.
+
+```
+curl --noproxy '*' -k --resolve myapp.example.com:443:192.168.56.10 https://myapp.example.com
+```
+
+![img](img/image13.png)
