@@ -423,3 +423,59 @@ microk8s kubectl auth can-i --list --as=developer
 ```
 
 ![img](img/image19.png)
+
+После создания `Role` и `RoleBinding` проверим права пользователя `developer`.
+
+Сначала проверим возможность просмотра списка Pod:
+
+```
+microk8s kubectl get pods --as=developer
+```
+
+![img](img/image20.png)
+
+Пользователь `developer` успешно получил список Pod в namespace `default`.
+
+Для дальнейшей проверки определим имя Pod приложения:
+
+```
+POD=$(microk8s kubectl get pods --as=developer \
+  -l app=nginx-multitool \
+  -o jsonpath='{.items[0].metadata.name}')
+
+echo "$POD"
+```
+
+![img](img/image21.png)
+
+Проверим возможность просмотра подробной информации о Pod:
+
+```
+microk8s kubectl describe pod "$POD" --as=developer
+```
+
+![img](img/image22.png)
+
+Команда выполнена успешно, пользователь `developer` имеет возможность просматривать информацию о Pod.
+
+Проверим доступ к логам контейнера `nginx`:
+
+```
+microk8s kubectl logs "$POD" -c nginx --as=developer --tail=10
+```
+
+![img](img/image23.png)
+
+Логи контейнера успешно получены от имени пользователя `developer`.
+
+Дополнительно проверим, что пользователь не обладает правами на изменение ресурсов. Попробуем удалить Pod:
+
+```
+microk8s kubectl delete pod "$POD" --as=developer
+```
+
+![img](img/image24.png)
+
+Kubernetes вернул ошибку `Forbidden`: пользователь `developer` не имеет права удалять Pod в namespace `default`.
+
+Таким образом, настроенная RBAC-политика предоставляет пользователю `developer` права на просмотр Pod и их логов, но не предоставляет права на удаление Pod.
