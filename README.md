@@ -56,7 +56,7 @@ spec:
               subPath: index.html
 
          - name: multitool
-          image: wbitt/network-multitool
+           image: wbitt/network-multitool
           env:
             - name: HTTP_PORT
               value: "8080"
