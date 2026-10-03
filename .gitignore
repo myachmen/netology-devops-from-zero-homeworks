@@ -1,2 +1,5 @@
 # Private TLS keys
 *.key
+
+# Locally generated certificate requests
+*.csr
