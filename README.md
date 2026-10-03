@@ -400,3 +400,26 @@ microk8s kubectl apply --dry-run=client -f rolebinding-developer.yaml
 
 ![img](img/image17.png)
 
+Применим оба манифеста:
+
+```
+microk8s kubectl apply -f role-pod-reader.yaml
+microk8s kubectl apply -f rolebinding-developer.yaml
+```
+
+Проверим созданные объекты:
+
+```
+microk8s kubectl get role pod-reader
+microk8s kubectl get rolebinding developer-pod-reader
+```
+
+![img](img/image18.png)
+
+Проверим, какие права Kubernetes реально выдал `developer`:
+
+```
+microk8s kubectl auth can-i --list --as=developer
+```
+
+![img](img/image19.png)
