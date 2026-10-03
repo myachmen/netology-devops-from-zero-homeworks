@@ -1,45 +1,149 @@
-![GitHub](https://img.shields.io/badge/GitHub-Repository-black)
-![Course](https://img.shields.io/badge/Course-DevOps-blue)
-![Platform](https://img.shields.io/badge/Platform-Netology-green)
+# Домашнее задание по теме "Настройка приложений и управление доступом в Kubernetes" Ячмень Марк Викторович
 
+## Задание 1. Работа с ConfigMaps
 
+Развернуть приложение (nginx + multitool), решить проблему конфигурации через ConfigMap и подключить веб-страницу.
 
-# Домашние задания по курсу "Devops-инженер с нуля: расширенный курс" от Нетологии
+## Решение 1
 
-## Модуль "IT-системы и операционная система Linux" [сертификат](Electronic_certificate/SLINA-51-9785269.pdf)
+Для выполнения домашнего задания будем использовать виртуальную машину `k8s-lab` с MicroK8s, подготовленную в рамках предыдущей домашней работы.
 
-- [Архитектура компьютера. Операционная система](Materials/Computer_architecture_Operating_system.pdf) ([docx](Materials/Computer_architecture_Operating_system.docx))
-- [Знакомство с операционной системой Linux](Materials/Introduction_to_the_Linux_operating_system.pdf) ([docx](Materials/Introduction_to_the_Linux_operating_system.docx))
-- [Основы работы в терминалe ОС Linux](Materials/Basics_of_working_in_the_Linux_OS_terminal.pdf) ([docx](Materials/Basics_of_working_in_the_Linux_OS_terminal.docx))
+Создадим манифест `cconfigmap-web.yaml` следующего содержания:
 
-## Модуль "Операционная система Linux" [сертификат](Electronic_certificate/SLINB-51-9785269.pdf)
+```
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data:
+  index.html: |
+    <html>
+      <head>
+        <title>Netology Kubernetes</title>
+      </head>
+      <body>
+        <h1>Hello from Netology!</h1>
+        <p>This page is stored in Kubernetes ConfigMap.</p>
+      </body>
+    </html>
+```
 
-- [Процессы, управление процессами](Materials/Linux_operating_system/Processes_process_management.pdf) ([docx](Materials/Linux_operating_system/Processes_process_management.docx))
-- [Дисковые системы](Materials/Linux_operating_system/Disk_systems.pdf) ([docx](Materials/Linux_operating_system/Disk_systems.docx))
+Создадим манифест `deployment.yaml` следующего содержания:
 
-## Модуль "Администрирование операционной системы Linux" [сертификат](Electronic_certificate/)
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-multitool
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-multitool
+  template:
+    metadata:
+      labels:
+        app: nginx-multitool
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-config-volume
+              mountPath: /usr/share/nginx/html/index.html
+              subPath: index.html
 
-## Модуль "Программирование на Bash" [сертификат](Electronic_certificate/)
+        - name: multitool
+          image: wbitt/network-multitool
+          ports:
+            - containerPort: 8080
 
-## Модуль "Сеть, сетевые протоколы" [сертификат](Electronic_certificate/)
+      volumes:
+        - name: nginx-config-volume
+          configMap:
+            name: nginx-config
+```
 
-## Модуль "Виртуализация" [сертификат](Electronic_certificate/)
+Создадим манифест `service.yaml` следующего содержания:
 
-## Модуль "Автоматизация и CI/СD" [сертификат](Electronic_certificate/)
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app: nginx-multitool
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+```
 
-## Модуль "Мониторинг" [сертификат](Electronic_certificate/SLINA-51-9785269.pdf)
+Выполним проверку манифестов:
 
-## Модуль "Отказоустойчивость" [сертификат](Electronic_certificate/)
+```
+microk8s kubectl apply --dry-run=client -f configmap-web.yaml
+microk8s kubectl apply --dry-run=client -f deployment.yaml
+microk8s kubectl apply --dry-run=client -f service.yaml
+```
 
-## Модуль "Системы хранения и передачи данных" [сертификат](Electronic_certificate/)
+![img](img/image1.png)
 
-## Модуль "Реляционные базы данных и администрирование баз данных" [сертификат](Electronic_certificate/)
+Применим манифесты:
 
-## Модуль "Информационная безопасность" [сертификат](Electronic_certificate/)
+```
+microk8s kubectl apply -f configmap-web.yaml
+microk8s kubectl apply -f deployment.yaml
+microk8s kubectl apply -f service.yaml
+```
 
+![img](img/image2.png)
 
-## Модуль "Системы управления версиями" [сертификат](Electronic_certificate/)
+Проверим созданные ресурсы:
 
-- [Системы контроля версий](../../tree/hw-Version_control_systems)
-- [Основы Git](../../tree/hw-Git_fundamentals)
-- [Инструменты Git](../../tree/hw-Git_tools)
+```
+microk8s kubectl get configmap nginx-config
+microk8s kubectl get deployment nginx-multitool
+microk8s kubectl get pods -o wide
+microk8s kubectl get svc nginx-service
+```
+
+![img](img/image3.png)
+
+Проверим ConfigMap.
+Посмотрим, что Kubernetes действительно хранит нашу HTML-страницу:
+
+```
+microk8s kubectl describe configmap nginx-config
+microk8s kubectl get configmap nginx-config -o yaml
+```
+
+![img](img/image4.png)
+
+Теперь файл внутри nginx.
+Получим имя Pod автоматически:
+
+```
+POD=$(microk8s kubectl get pods -l app=nginx-multitool -o jsonpath='{.items[0].metadata.name}')
+echo $POD
+````
+
+![img](img/image5.png)
+
+Проверим файл:
+
+```
+microk8s kubectl exec "$POD" -c nginx -- cat /usr/share/nginx/html/index.html
+```
+
+![img](img/image6.png)
+
+Проверим страницу через Service.
+Выполним проверку из второго контейнера `multitool`:
+
+```
+microk8s kubectl exec "$POD" -c multitool -- curl -s http://nginx-service
+```
