@@ -481,3 +481,21 @@ microk8s kubectl delete pod "$POD" --as=developer
 Kubernetes вернул ошибку `Forbidden`: пользователь `developer` не имеет права удалять Pod в namespace `default`.
 
 Таким образом, настроенная RBAC-политика предоставляет пользователю `developer` права на просмотр Pod и их логов, но не предоставляет права на удаление Pod.
+
+## Ссылки на манифесты
+
+### Задание 1
+
+- [configmap-web.yaml](manifests/k8s-access/configmap-web.yaml)
+- [deployment.yaml](manifests/k8s-access/deployment.yaml)
+- [service.yaml](manifests/k8s-access/service.yaml)
+
+### Задание 2
+
+- [secret-tls.yaml](manifests/k8s-access/secret-tls.yaml)
+- [ingress-tls.yaml](manifests/k8s-access/ingress-tls.yaml)
+
+### Задание 3
+
+- [role-pod-reader.yaml](manifests/k8s-access/role-pod-reader.yaml)
+- [rolebinding-developer.yaml](manifests/k8s-access/rolebinding-developer.yaml)
