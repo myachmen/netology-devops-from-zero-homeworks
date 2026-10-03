@@ -55,8 +55,8 @@ spec:
               mountPath: /usr/share/nginx/html/index.html
               subPath: index.html
 
-         - name: multitool
-           image: wbitt/network-multitool
+        - name: multitool
+          image: wbitt/network-multitool
           env:
             - name: HTTP_PORT
               value: "8080"
