@@ -200,13 +200,9 @@ microk8s kubectl describe secret tls-secret
 
 ![img](img/image10.png)
 
-Рабочий TLS Secret был создан непосредственно из локальных файлов
-сертификата и приватного ключа командой `kubectl create secret tls`,
-приведённой выше.
-
-В целях исключения публикации приватного ключа в открытом Git-репозитории
-в манифесте `secret-tls.yaml` значения сертификата и ключа заменены
-условными обозначениями:
+Рабочий TLS Secret был создан из локальных файлов сертификата и приватного ключа командой kubectl create secret tls, приведённой выше.  
+По условиям задания в репозитории также представлен манифест secret-tls.yaml. Реальные значения tls.crt и tls.key в него намеренно не включены, поскольку Kubernetes Secret хранит данные в Base64, что не является шифрованием, и публикация такого манифеста привела бы к раскрытию приватного ключа. 
+Поэтому в публичном репозитории используются условные значения:
 
 ```
 apiVersion: v1
@@ -214,6 +210,12 @@ kind: Secret
 metadata:
   name: tls-secret
 type: kubernetes.io/tls
+
+# Реальные значения tls.crt и tls.key намеренно не публикуются
+# в открытом Git-репозитории.
+#
+# Рабочий Secret создаётся из локальных файлов командой:
+# microk8s kubectl create secret tls tls-secret --cert=tls.crt --key=tls.key
 data:
   tls.crt: <BASE64_CERTIFICATE>
   tls.key: <BASE64_PRIVATE_KEY>
