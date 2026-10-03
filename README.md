@@ -182,3 +182,20 @@ openssl x509 -in tls.crt -noout -subject -issuer -dates
 ```
 
 ![img](img/image8.png)
+
+Создадим TLS Secret. 
+Сделаем Secret непосредственно из сертификата и ключа:
+
+```
+microk8s kubectl create secret tls tls-secret --cert=tls.crt --key=tls.key
+```
+![img](img/image9.png)
+
+Проверим метаданные, не выводя содержимое секрета:
+
+```
+microk8s kubectl get secret tls-secret
+microk8s kubectl describe secret tls-secret
+```
+
+![img](img/image10.png)
