@@ -97,3 +97,29 @@ spec:
 microk8s helm3 template test .
 ```
 
+![img](img/image3.png)
+
+Добавим Service для nginx:
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-nginx
+spec:
+  type: {{ .Values.nginx.service.type }}
+  selector:
+    app: {{ .Release.Name }}-nginx
+  ports:
+    - port: {{ .Values.nginx.service.port }}
+      targetPort: {{ .Values.nginx.service.port }}
+      protocol: TCP
+```
+
+Снова протестируем:
+
+```
+microk8s helm3 template test .
+```
+
+![img](img/image4.png)
