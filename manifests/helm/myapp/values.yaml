@@ -1,0 +1,19 @@
+nginx:
+  replicaCount: 1
+  image:
+    repository: nginx
+    tag: "1.27"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+
+multitool:
+  replicaCount: 1
+  image:
+    repository: wbitt/network-multitool
+    tag: "alpine-extra"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
