@@ -273,4 +273,31 @@ microk8s kubectl get deployments -n app1 \
 
 ![img](img/image15.png)
 
+Устанавим третий release в `app2`:
+
+```
+microk8s helm3 install myapp-v3 . \
+  --namespace app2 \
+  --set nginx.image.tag=1.25
+```
+
+![img](img/image16.png)
+
+Выполним проверку:
+
+```
+microk8s helm3 list -n app2
+microk8s kubectl get deployments,pods,svc -n app2
+```
+
+![img](img/image17.png)
+
+Проверим фактический образ:
+
+```
+microk8s kubectl get deployments -n app2 \
+  -o custom-columns=NAME:.metadata.name,IMAGE:.spec.template.spec.containers[0].image
+```
+
+![img](img/image18.png)
 
