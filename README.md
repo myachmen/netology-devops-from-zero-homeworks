@@ -244,3 +244,33 @@ microk8s kubectl get deployments,pods,svc -n app1
 ```
 
 ![img](img/image12.png)
+
+Установим второй release в тот же `app1`^
+
+```
+microk8s helm3 install myapp-v2 . \
+  --namespace app1 \
+  --set nginx.image.tag=1.26
+```
+
+![img](img/image13.png)
+
+Выполним проверку:
+
+```
+microk8s helm3 list -n app1
+microk8s kubectl get deployments,pods,svc -n app1
+```
+
+![img](img/image14.png)
+
+Выведем информацию о том, что `nginx` у двух `releases` действительно разных версий^
+
+```
+microk8s kubectl get deployments -n app1 \
+  -o custom-columns=NAME:.metadata.name,IMAGE:.spec.template.spec.containers[0].image
+```
+
+![img](img/image15.png)
+
+
