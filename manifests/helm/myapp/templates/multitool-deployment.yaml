@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-multitool
+  labels:
+    app: {{ .Release.Name }}-multitool
+spec:
+  replicas: {{ .Values.multitool.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-multitool
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-multitool
+    spec:
+      containers:
+        - name: multitool
+          image: "{{ .Values.multitool.image.repository }}:{{ .Values.multitool.image.tag }}"
+          imagePullPolicy: {{ .Values.multitool.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.multitool.service.port }}

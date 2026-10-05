@@ -123,3 +123,67 @@ microk8s helm3 template test .
 ```
 
 ![img](img/image4.png)
+
+Добавим второй компонент - `multitool`.
+Создадим Deployment:
+
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-multitool
+  labels:
+    app: {{ .Release.Name }}-multitool
+spec:
+  replicas: {{ .Values.multitool.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-multitool
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-multitool
+    spec:
+      containers:
+        - name: multitool
+          image: "{{ .Values.multitool.image.repository }}:{{ .Values.multitool.image.tag }}"
+          imagePullPolicy: {{ .Values.multitool.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.multitool.service.port }}
+```
+
+Создадим Service:
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-multitool
+spec:
+  type: {{ .Values.multitool.service.type }}
+  selector:
+    app: {{ .Release.Name }}-multitool
+  ports:
+    - port: {{ .Values.multitool.service.port }}
+      targetPort: {{ .Values.multitool.service.port }}
+      protocol: TCP
+```
+
+Проверим структуру:
+
+```
+find . -type f | sort
+```
+
+![img](img/image5.png)
+
+Выполним две проверки:
+
+```
+microk8s helm3 lint .
+microk8s helm3 template test .
+```
+
+![img](img/image6.png)
+
+![img](img/image7.png)
