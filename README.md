@@ -10,7 +10,7 @@
 
 Для выполнения домашнего задания будем использовать виртуальную машину `k8s-lab` с MicroK8s, подготовленную в рамках предыдущей домашней работы.
 
-Создаддим helm `myapp` и проверим его:
+Создадим Helm-чарт `myapp` и проверим его:
 
 ```
 microk8s helm3 create myapp
@@ -20,7 +20,7 @@ ls -la myapp
 
 ![img](img/image1.png)
 
-Очистим стандартные `templates`:
+Очистим стандартные шаблоны, которые не используются в нашем чарте:
 
 ```
 rm templates/NOTES.txt
@@ -30,6 +30,7 @@ rm templates/httproute.yaml
 rm templates/ingress.yaml
 rm templates/service.yaml
 rm templates/serviceaccount.yaml
+rm -rf templates/tests
 ```
 
 Проверим результат:
