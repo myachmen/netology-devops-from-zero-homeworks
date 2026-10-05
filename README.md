@@ -224,3 +224,23 @@ microk8s kubectl get namespaces
 ```
 
 ![img](img/image10.png)
+
+Установим первый release:
+
+```
+microk8s helm3 install myapp-v1 . \
+  --namespace app1 \
+  --set nginx.image.tag=1.27
+```
+
+![img](img/image11.png)
+
+
+Выполним проверку:
+
+```
+microk8s helm3 list -n app1
+microk8s kubectl get deployments,pods,svc -n app1
+```
+
+![img](img/image12.png)
