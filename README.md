@@ -208,7 +208,7 @@ microk8s kubectl get namespaces
 
 ![img](img/image8.png)
 
-Создадим namespace `app1` и `app2`^
+Создадим namespace `app1` и `app2`:
 
 ```
 microk8s kubectl create namespace app1
@@ -245,7 +245,7 @@ microk8s kubectl get deployments,pods,svc -n app1
 
 ![img](img/image12.png)
 
-Установим второй release в тот же `app1`^
+Установим второй release в тот же `app1`:
 
 ```
 microk8s helm3 install myapp-v2 . \
@@ -264,7 +264,7 @@ microk8s kubectl get deployments,pods,svc -n app1
 
 ![img](img/image14.png)
 
-Выведем информацию о том, что `nginx` у двух `releases` действительно разных версий^
+Выведем информацию о том, что `nginx` у двух `releases` действительно разных версий:
 
 ```
 microk8s kubectl get deployments -n app1 \
@@ -273,7 +273,7 @@ microk8s kubectl get deployments -n app1 \
 
 ![img](img/image15.png)
 
-Устанавим третий release в `app2`:
+Установим третий release в `app2`:
 
 ```
 microk8s helm3 install myapp-v3 . \
@@ -322,6 +322,27 @@ microk8s kubectl get deployments -n app2 \
   -o custom-columns=NAME:.metadata.name,READY:.status.readyReplicas,IMAGE:.spec.template.spec.containers[0].image
 ```
 
+![img](img/image20.png)
+
+В ходе выполнения домашнего задания был подготовлен Helm-чарт для развёртывания приложения, состоящего из двух компонентов: `nginx` и `multitool`. Для каждого компонента созданы отдельные `Deployment` и `Service`, а параметры образов вынесены в `values.yaml`.
+
+Работоспособность Helm-чарта проверена командами `helm lint` и `helm template`.
+
+С помощью подготовленного чарта были развёрнуты три Helm release:
+
+- `myapp-v1` в namespace `app1` с образом `nginx:1.27`;
+- `myapp-v2` в namespace `app1` с образом `nginx:1.26`;
+- `myapp-v3` в namespace `app2` с образом `nginx:1.25`.
+
+Все созданные Deployment находятся в состоянии `Ready`, а Pod — в состоянии `Running`. Таким образом, один Helm-чарт позволяет разворачивать несколько независимых версий приложения в одном или разных namespace с изменением версии образа через параметры чарта.
 
 
+## Ссылки на манифесты
 
+- [Helm-чарт `myapp`](manifests/helm/myapp/)
+- [Chart.yaml](manifests/helm/myapp/Chart.yaml)
+- [values.yaml](manifests/helm/myapp/values.yaml)
+- [Deployment nginx](manifests/helm/myapp/templates/nginx-deployment.yaml)
+- [Service nginx](manifests/helm/myapp/templates/nginx-service.yaml)
+- [Deployment multitool](manifests/helm/myapp/templates/multitool-deployment.yaml)
+- [Service multitool](manifests/helm/myapp/templates/multitool-service.yaml)
