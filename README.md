@@ -301,3 +301,27 @@ microk8s kubectl get deployments -n app2 \
 
 ![img](img/image18.png)
 
+Выведем все три Helm release:
+
+```
+microk8s helm3 list -A
+```
+
+![img](img/image19.png)
+
+Выведем информацию одновременно по двум namespace:
+
+```
+echo "=== app1 ==="
+microk8s kubectl get deployments -n app1 \
+  -o custom-columns=NAME:.metadata.name,READY:.status.readyReplicas,IMAGE:.spec.template.spec.containers[0].image
+
+echo
+echo "=== app2 ==="
+microk8s kubectl get deployments -n app2 \
+  -o custom-columns=NAME:.metadata.name,READY:.status.readyReplicas,IMAGE:.spec.template.spec.containers[0].image
+```
+
+
+
+
