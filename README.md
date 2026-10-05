@@ -188,3 +188,39 @@ microk8s helm3 template test .
 ![img](img/image6.png)
 
 ![img](img/image7.png)
+
+
+
+## Задание 2. Запустить две версии в разных неймспейсах
+
+1. Подготовив чарт, необходимо его проверить. Запуститe несколько копий приложения.
+2. Одну версию в namespace=app1, вторую версию в том же неймспейсе, третью версию в namespace=app2.
+3. Продемонстрируйте результат.
+
+
+## Решение 2
+
+Проверим текущее состояние `namespaces`:
+
+```
+microk8s kubectl get namespaces
+```
+
+![img](img/image8.png)
+
+Создадим namespace `app1` и `app2`^
+
+```
+microk8s kubectl create namespace app1
+microk8s kubectl create namespace app2
+```
+
+![img](img/image9.png)
+
+Проверим снова:
+
+```
+microk8s kubectl get namespaces
+```
+
+![img](img/image10.png)
