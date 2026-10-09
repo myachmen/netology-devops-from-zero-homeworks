@@ -368,10 +368,219 @@ dpkg -l | grep -E '^ii[[:space:]]+(containerd|containerd.io)' || true
 ![img](img/image20.png)
 
 Подготовим скрипт установки `containerd`.
+Создадим файл `install-containerd.sh` следующего содержания:
 
+```
 
+#!/usr/bin/env bash
+set -euo pipefail
 
+echo "=== Installing containerd on $(hostname) ==="
 
+export DEBIAN_FRONTEND=noninteractive
+
+# Install containerd from Ubuntu repositories
+apt-get update
+apt-get install -y containerd
+
+# Generate configuration for the installed version
+mkdir -p /etc/containerd
+
+if [ ! -f /etc/containerd/config.toml ]; then
+    containerd config default > /etc/containerd/config.toml
+fi
+
+# Detect containerd configuration version
+CONFIG_VERSION=$(containerd config dump | grep -m1 '^version = ' || true)
+
+echo "Containerd configuration: ${CONFIG_VERSION}"
+
+# Configure systemd cgroups for containerd 1.x or 2.x
+if grep -q 'SystemdCgroup = false' /etc/containerd/config.toml; then
+    sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' \
+        /etc/containerd/config.toml
+fi
+
+# Ensure CRI is not disabled
+if grep -Eq '^disabled_plugins[[:space:]]*=' /etc/containerd/config.toml; then
+    sed -i '/^disabled_plugins[[:space:]]*=/s/"cri"//g' \
+        /etc/containerd/config.toml
+fi
+
+systemctl enable --now containerd
+systemctl restart containerd
+
+echo "=== Verifying containerd ==="
+
+containerd --version
+systemctl is-active --quiet containerd
+
+if ! grep -q 'SystemdCgroup = true' /etc/containerd/config.toml; then
+    echo "ERROR: SystemdCgroup is not enabled"
+    exit 1
+fi
+
+echo "=== Containerd installation completed successfully ==="
+```
+
+Подключим скрипт к Vagrant.
+Для этого в `Vagrantfile` внутри блока `config.vm.define` добавим строки:
+
+```
+machine.vm.provision "shell",
+  path: "scripts/install-containerd.sh",
+  privileged: true
+```
+
+Проверим конфигурацию:
+
+```
+vagrant validate
+```
+
+Установим `containerd` на ноду `k8s-master`:
+
+```
+vagrant provision k8s-master
+```
+
+![img](img/image21.png)
+
+Проверим установленный `containerd`.
+Внутри виртуальной машины `k8s-master` выполним:
+
+```
+containerd --version
+systemctl is-active containerd
+sudo containerd config dump | grep -E 'version =|SystemdCgroup|disabled_plugins'
+```
+
+![img](img/image22.png)
+
+Проверим, что `containerd` действительно создал сокет для взаимодействия с Kubernetes:
+
+```
+ls -l /run/containerd/containerd.sock
+```
+
+![img](img/image23.png)
+
+Проверим CRI (Container Runtime Interface) перед установкой на остальные узлы.
+Именно через CRI компонент `kubelet` будет взаимодействовать с `containerd`.
+
+Внутри виртуальной машины `k8s-master` выполним:
+
+```
+command -v crictl || true
+sudo ctr plugins ls | grep -E 'cri|runtime'
+sudo journalctl -u containerd -b --no-pager -n 30
+```
+
+![img](img/image24.png)
+
+В выводе присутствует сообщение:
+
+```
+failed to load cni during init
+cni config load failed: no network config found in /etc/cni/net.d
+```
+
+CNI (Container Network Interface) — механизм, с помощью которого Kubernetes организует сетевое взаимодействие контейнеров и Pod.
+Мы пока установили только containerd. Сам Kubernetes и сетевой плагин ещё не установлены, поэтому каталог /etc/cni/net.d не содержит необходимой конфигурации.
+После инициализации кластера и установки выбранного CNI-плагина эта проблема должна исчезнуть.
+
+Установим `containerd` на остальные четыре узла:
+
+```
+vagrant provision k8s-worker-1 k8s-worker-2 k8s-worker-3 k8s-worker-4
+```
+
+Проверим все пять узлов:
+
+```
+$nodes = @(
+    "k8s-master",
+    "k8s-worker-1",
+    "k8s-worker-2",
+    "k8s-worker-3",
+    "k8s-worker-4"
+)
+
+foreach ($node in $nodes) {
+    Write-Host "`n===== $node =====" -ForegroundColor Cyan
+
+    vagrant ssh $node -c 'sudo ctr plugins ls'
+}
+```
+
+Для автоматизации установки создадим файл `install-kubernetes.sh` следующего содержания:
+
+```
+#!/usr/bin/env bash
+set -euo pipefail
+
+K8S_MINOR="v1.36"
+K8S_PACKAGE_VERSION="1.36.5-1.1"
+
+echo "=== Installing Kubernetes components on $(hostname) ==="
+
+export DEBIAN_FRONTEND=noninteractive
+
+# 1. Install prerequisites
+apt-get update
+apt-get install -y apt-transport-https ca-certificates curl gpg
+
+# 2. Configure Kubernetes APT repository
+install -d -m 0755 /etc/apt/keyrings
+
+curl -fsSL \
+  "https://pkgs.k8s.io/core:/stable:/${K8S_MINOR}/deb/Release.key" \
+  | gpg --dearmor --yes \
+      -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+chmod 0644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/${K8S_MINOR}/deb/ /" \
+  > /etc/apt/sources.list.d/kubernetes.list
+
+# Remove earlier repository configuration, if present
+if [ -f /usr/share/keyrings/kubernetes-apt-keyring.gpg ]; then
+    rm -f /usr/share/keyrings/kubernetes-apt-keyring.gpg
+fi
+
+# 3. Install pinned Kubernetes version
+apt-get update
+
+apt-mark unhold kubelet kubeadm kubectl 2>/dev/null || true
+
+apt-get install -y \
+  "kubelet=${K8S_PACKAGE_VERSION}" \
+  "kubeadm=${K8S_PACKAGE_VERSION}" \
+  "kubectl=${K8S_PACKAGE_VERSION}"
+
+# 4. Prevent unintended upgrades
+apt-mark hold kubelet kubeadm kubectl
+
+# 5. Enable kubelet
+systemctl enable kubelet
+
+# 6. Verify installation
+echo "=== Installed Kubernetes versions ==="
+kubeadm version -o short
+kubectl version --client
+kubelet --version
+
+echo "=== Kubernetes components installation completed successfully ==="
+```
+
+Подключим скрипт к Vagrant.
+Для этого в `Vagrantfile` внутри блока `config.vm.define` добавим строки:
+
+```
+node.vm.provision "shell",
+  name: "install-kubernetes",
+  path: "scripts/install-kubernetes.sh"
+```
 
 
 
