@@ -925,6 +925,12 @@ kubectl edit daemonset kube-flannel-ds -n kube-flannel
 Проверим, что параметр `--iface=eth1` присутствует
 в конфигурации DaemonSet Flannel:
 
+```
+kubectl get daemonset kube-flannel-ds -n kube-flannel \
+  -o jsonpath='{.spec.template.spec.containers[?(@.name=="kube-flannel")].args}'
+echo
+```
+
 ![img](img/image48.png)
 
 Дождёмся завершения обновления DaemonSet:
@@ -965,16 +971,25 @@ Server: nginx/1.30.5
 
 Для сохранения воспроизводимой конфигурации в репозиторий добавлен манифест `kube-flannel.yml` версии `v0.28.10` с параметром `--iface=eth1`.
 
-Проверим корректность манифеста средствами Kubernetes API:
+Для проверки сохранённого манифеста загрузим файл `kube-flannel.yml` с локального компьютера на управляющий узел `k8s-master`.
+
+В PowerShell, находясь в каталоге `k8s-install`, выполним:
+
+```
+vagrant upload .\manifests\kube-flannel.yml /tmp/kube-flannel.yml k8s-master
+```
+
+После успешной загрузки проверим манифест с помощью Kubernetes API. Для этого выполним на управляющем узле `k8s-master`:
 
 ```
 kubectl apply --dry-run=server -f /tmp/kube-flannel.yml
 ```
 
+Параметр `--dry-run=server` позволяет проверить обработку манифеста сервером Kubernetes API без сохранения изменений в кластере.
+
 Проверка завершилась успешно, без ошибок валидации.
 
 ![img](img/image47.png)
-
 
 
 ## Ссылки на файлы
