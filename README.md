@@ -922,6 +922,11 @@ kubectl edit daemonset kube-flannel-ds -n kube-flannel
 - --iface=eth1
 ```
 
+Проверим, что параметр `--iface=eth1` присутствует
+в конфигурации DaemonSet Flannel:
+
+![img](img/image48.png)
+
 Дождёмся завершения обновления DaemonSet:
 
 ```
