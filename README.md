@@ -850,6 +850,7 @@ kubectl get pods -n kube-system -o wide
 
 ![img](img/image41.png)
 
+### Проверка работы Kubernetes Deployment
 
 Для проверки работы кластера создадим Deployment с четырьмя репликами веб-сервера nginx.
 
@@ -877,6 +878,98 @@ kubectl get pods -o wide
 Kubernetes распределил Pod по четырём worker-узлам: `k8s-worker-1`, `k8s-worker-2`, `k8s-worker-3` и `k8s-worker-4`.
 
 ![img](img/image42.png)
+
+
+### Проверка межузлового сетевого взаимодействия и настройка Flannel
+
+После запуска Deployment `nginx-test` проверим сетевое взаимодействие между Pod, расположенными на разных worker-узлах.
+
+Выполним HTTP-запрос из Pod на `k8s-worker-1` к Pod с адресом `10.244.2.2`, работающему на `k8s-worker-2`:
+
+```
+kubectl exec nginx-test-66d4b69bf4-vtwpv -- \
+  curl -I --max-time 10 http://10.244.2.2
+```
+
+Первоначально запрос завершился ошибкой `Could not connect to server`.
+
+![img](img/image43.png)
+
+Для диагностики проверим IP-адреса, используемые Flannel:
+
+```
+kubectl get nodes \
+  -o custom-columns='NAME:.metadata.name,FLANNEL-IP:.metadata.annotations.flannel\.alpha\.coreos\.com/public-ip'
+```
+
+Обнаружено, что Flannel на всех пяти узлах использует адрес `10.0.2.15`, принадлежащий интерфейсу `eth0` (NAT-интерфейс VirtualBox).
+
+![img](img/image44.png)
+
+Поскольку все виртуальные машины имеют одинаковый адрес NAT-интерфейса, использование `eth0` не обеспечивает корректную межузловую VXLAN-связность.
+
+Для обмена трафиком между узлами необходимо использовать интерфейс `eth1`, подключённый к сети VirtualBox Host-Only `192.168.57.0/24`.
+
+Изменим конфигурацию DaemonSet Flannel:
+
+```
+kubectl edit daemonset kube-flannel-ds -n kube-flannel
+```
+
+В список аргументов контейнера `kube-flannel` добавим:
+
+```
+- --iface=eth1
+```
+
+Дождёмся завершения обновления DaemonSet:
+
+```
+kubectl rollout status daemonset/kube-flannel-ds \
+  -n kube-flannel --timeout=180s
+```
+
+Повторно проверим IP-адреса Flannel:
+
+```
+kubectl get nodes \
+  -o custom-columns='NAME:.metadata.name,FLANNEL-IP:.metadata.annotations.flannel\.alpha\.coreos\.com/public-ip'
+```
+
+Теперь каждый узел использует собственный адрес из сети `192.168.57.0/24`.
+
+![img](img/image45.png)
+
+Повторим HTTP-запрос между Pod на разных worker-узлах:
+
+```
+kubectl exec nginx-test-66d4b69bf4-vtwpv -- \
+  curl -I --max-time 10 http://10.244.2.2
+```
+
+В результате получен ответ:
+
+```
+HTTP/1.1 200 OK
+Server: nginx/1.30.5
+```
+
+![img](img/image46.png)
+
+Таким образом, подтверждена работоспособность межузлового сетевого взаимодействия Kubernetes через Flannel VXLAN.
+
+Для сохранения воспроизводимой конфигурации в репозиторий добавлен манифест `kube-flannel.yml` версии `v0.28.10` с параметром `--iface=eth1`.
+
+Проверим корректность манифеста средствами Kubernetes API:
+
+```
+kubectl apply --dry-run=server -f /tmp/kube-flannel.yml
+```
+
+Проверка завершилась успешно, без ошибок валидации.
+
+![img](img/image47.png)
+
 
 
 ## Ссылки на файлы
