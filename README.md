@@ -100,8 +100,74 @@ vagrant ssh k8s-master -c "hostname; ip -4 -br addr"
 
 ![img](img/image6.png)
 
+Все настройки соответствуют запланированным.
+Теперь развернём четыре worker-ноды:
 
+```
+vagrant up k8s-worker-1 k8s-worker-2 k8s-worker-3 k8s-worker-4 --provider=virtualbox
+```
 
+Проверим hostname и IP-адреса всех узлов:
+
+```
+$nodes = @(
+    "k8s-master",
+    "k8s-worker-1",
+    "k8s-worker-2",
+    "k8s-worker-3",
+    "k8s-worker-4"
+)
+
+foreach ($node in $nodes) {
+    Write-Host "`n===== $node =====" -ForegroundColor Cyan
+    vagrant ssh $node -c "hostname; ip -4 -br addr"
+}
+```
+
+![img](img/image7.png)
+
+Проверим связь между узлами:
+
+```
+vagrant ssh k8s-master -c "ping -c 3 192.168.57.11"
+```
+
+![img](img/image8.png)
+
+Проверим связь со всеми worker-нодами.
+Подключимся по ssh к ноде `k8s-master`:
+
+```
+vagrant ssh k8s-master
+```
+
+и выполним команду:
+
+```
+for ip in 192.168.57.11 192.168.57.12 192.168.57.13 192.168.57.14; do
+    echo "=== $ip ==="
+    ping -c 2 "$ip"
+done
+```
+
+![img](img/image9.png)
+
+Отключим swap на ноде `k8s-master` и отключим автоматическое подключение swap при загрузке Ubuntu:
+
+```
+sudo swapoff -a
+sudo sed -i.bak '/^[^#].*[[:space:]]swap[[:space:]]/s/^/#/' /etc/fstab
+```
+
+Проверим результат:
+
+```
+swapon --show
+free -h
+grep -n swap /etc/fstab
+```
+
+По умолчанию kubelet при стандартной конфигурации ожидает отключённый swap. Если оставить его включённым, на этапе запуска Kubernetes могут возникнуть проблемы.
 
 
 
