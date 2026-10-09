@@ -642,7 +642,7 @@ sudo kubeadm init \
 
 ![img](img/image28.png)
 
-Приступим к настройка `kubectl`.
+Приступим к настройке `kubectl`.
 Предоставим пользователю `vagrant` возможность управлять кластером без `sudo`:
 
 ```
@@ -668,7 +668,7 @@ kubectl get pods -n kube-system -o wide
 
 ![img](img/image30.png)
 
-Исправbv InternalIP на ноде `k8s-master`:
+Исправим InternalIP на узле `k8s-master`:
 
 ```
 echo 'KUBELET_EXTRA_ARGS="--node-ip=192.168.57.10"' \
@@ -830,9 +830,33 @@ kubectl get pods -n kube-flannel -o wide
 
 ![img](img/image40.png)
 
+Проверим состояние системных компонентов Kubernetes.
+
+На узле `k8s-master` выполним:
+
+```
+kubectl get nodes -o wide
+kubectl get pods -n kube-system -o wide
+```
+
+В результате проверки установлено, что основные компоненты кластера работают:
+
+- `etcd` запущен на узле `k8s-master`.
+- `kube-apiserver`, `kube-controller-manager` и `kube-scheduler` работают на управляющем узле.
+- Два экземпляра `CoreDNS` находятся в состоянии `Running`.
+- `kube-proxy` запущен на всех пяти узлах.
+
+Все системные Pod находятся в состоянии `Running`.
+
+![img](img/image41.png)
 
 
 
 ## Ссылки на файлы
 
-_Будут добавлены по мере выполнения задания._
+- [Vagrantfile — конфигурация пяти виртуальных машин](k8s-install/Vagrantfile)
+- [prepare-nodes.sh — подготовка узлов Kubernetes](k8s-install/scripts/prepare-nodes.sh)
+- [install-containerd.sh — установка containerd](k8s-install/scripts/install-containerd.sh)
+- [install-kubernetes.sh — установка компонентов Kubernetes](k8s-install/scripts/install-kubernetes.sh)
+- [configure-kubelet.sh — настройка IP-адреса kubelet](k8s-install/scripts/configure-kubelet.sh)
+- [kube-flannel.yml — конфигурация сетевого плагина Flannel](k8s-install/manifests/kube-flannel.yml)
