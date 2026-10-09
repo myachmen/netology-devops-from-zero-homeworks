@@ -16,6 +16,10 @@ Vagrant.configure("2") do |config|
     config.vm.define node[:name] do |machine|
       machine.vm.hostname = node[:name]
 
+      machine.vm.provision "shell",
+        path: "scripts/prepare-nodes.sh",
+        privileged: true
+
       machine.vm.network "private_network",
         ip: node[:ip],
         virtualbox__intnet: false,

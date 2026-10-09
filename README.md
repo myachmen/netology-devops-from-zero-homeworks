@@ -167,12 +167,207 @@ free -h
 grep -n swap /etc/fstab
 ```
 
+![img](img/image10.png)
+
 По умолчанию kubelet при стандартной конфигурации ожидает отключённый swap. Если оставить его включённым, на этапе запуска Kubernetes могут возникнуть проблемы.
 
+Приступим к настройке модулей ядра:
 
+```
+sudo tee /etc/modules-load.d/k8s.conf > /dev/null <<'EOF'
+overlay
+br_netfilter
+EOF
+```
 
+Загрузим модули:
 
+```
+sudo modprobe overlay
+sudo modprobe br_netfilter
+```
 
+Создадим файл параметров ядра:
+
+```
+sudo tee /etc/sysctl.d/99-kubernetes.conf > /dev/null <<'EOF'
+net.bridge.bridge-nf-call-iptables = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.ip_forward = 1
+EOF
+```
+
+Применим настройки:
+
+```
+sudo sysctl --system
+```
+
+![img](img/image11.png)
+
+Проверим результат:
+
+```
+lsmod | grep -E 'overlay|br_netfilter'
+```
+
+![img](img/image12.png)
+
+Ошибки в выводе означают, что некоторые системные параметры Ubuntu не удалось установить. Причиной могут быть особенности текущего ядра или сетевого окружения.
+
+Проверим `sysctl`:
+
+```
+sysctl net.bridge.bridge-nf-call-iptables
+sysctl net.bridge.bridge-nf-call-ip6tables
+sysctl net.ipv4.ip_forward
+
+sysctl net.ipv4.conf.all.accept_source_route
+sysctl net.ipv4.conf.all.promote_secondaries
+```
+
+![img](img/image13.png)
+
+Проверка подтвердила, что все необходимые параметры ядра для Kubernetes настроены правильно.
+
+Создадим каталог для скриптов:
+
+```
+New-Item -ItemType Directory -Path ".\scripts" -Force
+```
+
+![img](img/image14.png)
+
+Создадим файл `prepare-nodes.sh` следующего содержания:
+
+```
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "=== Preparing Kubernetes node: $(hostname) ==="
+
+# 1. Disable swap
+echo "[1/4] Disabling swap..."
+swapoff -a
+
+if grep -Eq '^[^#].*[[:space:]]swap[[:space:]]' /etc/fstab; then
+    sed -i.bak '/^[^#].*[[:space:]]swap[[:space:]]/s/^/#/' /etc/fstab
+fi
+
+# 2. Load required kernel modules
+echo "[2/4] Configuring kernel modules..."
+
+cat > /etc/modules-load.d/k8s.conf <<'EOF'
+overlay
+br_netfilter
+EOF
+
+modprobe overlay
+modprobe br_netfilter
+
+# 3. Configure networking
+echo "[3/4] Configuring sysctl..."
+
+cat > /etc/sysctl.d/99-kubernetes.conf <<'EOF'
+net.bridge.bridge-nf-call-iptables = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.ip_forward = 1
+EOF
+
+sysctl -p /etc/sysctl.d/99-kubernetes.conf
+
+# 4. Verify configuration
+echo "[4/4] Verifying configuration..."
+
+if [ -n "$(swapon --noheadings --show)" ]; then
+    echo "ERROR: Swap is still enabled"
+    exit 1
+fi
+
+for module in overlay br_netfilter; do
+    if ! lsmod | grep -q "^${module} "; then
+        echo "ERROR: Kernel module ${module} is not loaded"
+        exit 1
+    fi
+done
+
+for parameter in \
+    net.bridge.bridge-nf-call-iptables \
+    net.bridge.bridge-nf-call-ip6tables \
+    net.ipv4.ip_forward
+do
+    value=$(sysctl -n "$parameter")
+    if [ "$value" != "1" ]; then
+        echo "ERROR: ${parameter}=${value}, expected 1"
+        exit 1
+    fi
+done
+
+echo "=== Kubernetes node preparation completed successfully ==="
+```
+
+Скрипт выполняет те же настройки, которые мы уже проверили вручную на ноде `k8s-master`.
+
+Подключим скрипт к Vagrant.
+Для этого в `Vagrantfile` внутри блока `config.vm.define` добавим строки:
+
+```
+machine.vm.provision "shell",
+  path: "scripts/prepare-nodes.sh",
+  privileged: true
+```
+
+Проверим конфигурацию:
+
+```
+vagrant validate
+```
+
+![img](img/image15.png)
+
+Выполним проверку `provisioning` на `k8s-master`:
+
+```
+vagrant provision k8s-master
+```
+
+![img](img/image16.png)
+
+Запустим скрипт на остальных четырёх машинах:
+
+```
+vagrant provision k8s-worker-1 k8s-worker-2 k8s-worker-3 k8s-worker-4
+```
+
+![img](img/image17.png)
+
+Проверим состояние всех пяти узлов:
+
+```
+vagrant status
+```
+
+![img](img/image18.png)
+
+Проверим доступность `containerd`:
+
+```
+apt-cache policy containerd
+```
+
+![img](img/image19.png)
+
+Проверим наличие уже установленной контейнерной среды:
+
+```
+command -v containerd || true
+dpkg -l | grep -E '^ii[[:space:]]+(containerd|containerd.io)' || true
+```
+
+![img](img/image20.png)
+
+Подготовим скрипт установки `containerd`.
 
 
 
