@@ -683,8 +683,152 @@ kubectl get nodes -o wide
 ![img](img/image31.png)
 
 Автоматизируем настройку IP для всех узлов.
+Создадим файл `configure-kubelet.sh` следующего содержания:
 
+```
+#!/usr/bin/env bash
+set -euo pipefail
 
+echo "=== Configuring kubelet node IP ==="
+
+NODE_IP=$(ip -4 -o addr show dev eth1 | awk '{print $4}' | cut -d/ -f1)
+
+if [[ -z "$NODE_IP" ]]; then
+    echo "ERROR: Cannot determine IP address of eth1"
+    exit 1
+fi
+
+echo "Detected node IP: $NODE_IP"
+
+printf 'KUBELET_EXTRA_ARGS="--node-ip=%s"\n' "$NODE_IP" \
+    > /etc/default/kubelet
+
+systemctl daemon-reload
+systemctl restart kubelet
+
+echo "=== Kubelet configured successfully ==="
+```
+
+Добавим `provisioner` в `Vagrantfile`:
+
+```
+machine.vm.provision "shell",
+  name: "configure-kubelet",
+  path: "scripts/configure-kubelet.sh",
+  privileged: true
+```
+
+Проверим конфигурацию:
+
+```
+vagrant validate
+```
+
+Применим новый `provisioner`:
+
+```
+$workers = @(
+    "k8s-worker-1",
+    "k8s-worker-2",
+    "k8s-worker-3",
+    "k8s-worker-4"
+)
+
+foreach ($worker in $workers) {
+    Write-Host "`n===== $worker =====" -ForegroundColor Cyan
+    vagrant provision $worker --provision-with configure-kubelet
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "ERROR: Provisioning failed for $worker" -ForegroundColor Red
+        break
+    }
+}
+```
+
+Мы используем `--provision-with configure-kubelet`, поэтому Vagrant запустит только новый скрипт, а не повторит установку containerd и Kubernetes.
+
+![img](img/image32.png)
+
+Проверим результат:
+
+```
+foreach ($worker in $workers) {
+    Write-Host "`n===== $worker =====" -ForegroundColor Cyan
+
+    vagrant ssh $worker -c 'cat /etc/default/kubelet; ip -4 -br addr show eth1'
+}
+```
+
+![img](img/image33.png)
+
+Приступим к установке сетевого плагина Flannel:
+
+```
+kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+```
+
+![img](img/image34.png)
+
+Проверим результат:
+
+```
+kubectl get pods -n kube-flannel -o wide
+
+kubectl get nodes -o wide
+kubectl get pods -n kube-system -o wide
+```
+
+![img](img/image35.png)
+
+Приступим к подключению worker-узлов.
+На виртуальной машине `k8s-master` выполним:
+
+```
+kubeadm token create --print-join-command
+```
+
+В выводе мы получим команду, которая используется для подключения worker-узлов к Control Plane.
+
+![img](img/image36.png)
+
+Подключим первый worker.
+На виртуальной машине `k8s-worker-1` выполним команду, полученную на предыдущем шаге:
+
+```
+sudo kubeadm join 192.168.57.10:6443 \
+  --token <TOKEN> \
+  --discovery-token-ca-cert-hash sha256:<HASH>
+```
+
+![img](img/image37.png)
+
+Проверим подключение на ноде `k8s-master`:
+
+```
+kubectl get nodes -o wide
+kubectl get pods -n kube-flannel -o wide
+```
+
+![img](img/image38.png)
+
+Для подключения оставшихся трёх worker-узлов выполним ту же самую команду для подключения на каждом из них.
+
+После подключения всех worker-узлов проверим весь кластер.
+На виртуальной машине `k8s-master` выполним:
+
+```
+kubectl get nodes -o wide
+```
+
+![img](img/image39.png)
+
+Проверим Flannel:
+
+```
+kubectl get pods -n kube-flannel -o wide
+```
+
+![img](img/image40.png)
 
 
 
