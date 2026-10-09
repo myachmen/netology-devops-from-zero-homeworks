@@ -543,11 +543,6 @@ chmod 0644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/${K8S_MINOR}/deb/ /" \
   > /etc/apt/sources.list.d/kubernetes.list
 
-# Remove earlier repository configuration, if present
-if [ -f /usr/share/keyrings/kubernetes-apt-keyring.gpg ]; then
-    rm -f /usr/share/keyrings/kubernetes-apt-keyring.gpg
-fi
-
 # 3. Install pinned Kubernetes version
 apt-get update
 
@@ -577,13 +572,117 @@ echo "=== Kubernetes components installation completed successfully ==="
 Для этого в `Vagrantfile` внутри блока `config.vm.define` добавим строки:
 
 ```
-node.vm.provision "shell",
+machine.vm.provision "shell",
   name: "install-kubernetes",
-  path: "scripts/install-kubernetes.sh"
+  path: "scripts/install-kubernetes.sh",
+  privileged: true
 ```
 
+Проверим конфигурацию:
 
+```
+vagrant validate
+```
 
+Установим Kubernetes на ноду `k8s-master`:
+
+```
+vagrant provision k8s-master --provision-with install-kubernetes
+```
+
+Проверим установленные версии.
+Внутри виртуальной машины `k8s-master` выполним:
+
+```
+kubeadm version -o short
+kubelet --version
+kubectl version --client
+```
+
+![img](img/image25.png)
+
+Установим Kubernetes на четыре worker-узла:
+
+```
+vagrant provision k8s-worker-1 k8s-worker-2 k8s-worker-3 k8s-worker-4 --provision-with install-kubernetes
+```
+
+Проверим версии и фиксацию пакетов сразу на всех пяти узлах:
+
+```
+$nodes = @(
+    "k8s-master",
+    "k8s-worker-1",
+    "k8s-worker-2",
+    "k8s-worker-3",
+    "k8s-worker-4"
+)
+
+foreach ($node in $nodes) {
+    Write-Host "`n===== $node =====" -ForegroundColor Cyan
+
+    vagrant ssh $node -c 'kubeadm version -o short; kubelet --version; kubectl version --client; apt-mark showhold'
+}
+```
+
+![img](img/image26.png)
+
+Инициализируем Kubernetes:
+
+```
+sudo kubeadm init \
+  --apiserver-advertise-address=192.168.57.10 \
+  --control-plane-endpoint=192.168.57.10 \
+  --pod-network-cidr=10.244.0.0/16 \
+  --cri-socket=unix:///run/containerd/containerd.sock \
+  --kubernetes-version=v1.36.5
+```
+
+![img](img/image27.png)
+
+![img](img/image28.png)
+
+Приступим к настройка `kubectl`.
+Предоставим пользователю `vagrant` возможность управлять кластером без `sudo`:
+
+```
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+```
+
+Проверим подключение к API Server:
+
+```
+kubectl cluster-info
+```
+
+![img](img/image29.png)
+
+Посмотрим состояние узлов и системных Pod:
+
+```
+kubectl get nodes -o wide
+kubectl get pods -n kube-system -o wide
+```
+
+![img](img/image30.png)
+
+Исправbv InternalIP на ноде `k8s-master`:
+
+```
+echo 'KUBELET_EXTRA_ARGS="--node-ip=192.168.57.10"' \
+  | sudo tee /etc/default/kubelet
+
+sudo systemctl daemon-reload
+sudo systemctl restart kubelet
+
+kubectl get nodes -o wide
+```
+
+![img](img/image31.png)
+
+Автоматизируем настройку IP для всех узлов.
 
 
 

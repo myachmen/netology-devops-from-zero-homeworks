@@ -25,11 +25,6 @@ chmod 0644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/${K8S_MINOR}/deb/ /" \
   > /etc/apt/sources.list.d/kubernetes.list
 
-# Remove earlier repository configuration, if present
-if [ -f /usr/share/keyrings/kubernetes-apt-keyring.gpg ]; then
-    rm -f /usr/share/keyrings/kubernetes-apt-keyring.gpg
-fi
-
 # 3. Install pinned Kubernetes version
 apt-get update
 
