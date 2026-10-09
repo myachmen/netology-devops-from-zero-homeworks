@@ -851,6 +851,33 @@ kubectl get pods -n kube-system -o wide
 ![img](img/image41.png)
 
 
+Для проверки работы кластера создадим Deployment с четырьмя репликами веб-сервера nginx.
+
+На узле `k8s-master` выполним:
+
+```
+kubectl create deployment nginx-test --image=nginx:stable --replicas=4
+```
+
+Дождёмся завершения развёртывания:
+
+```
+kubectl rollout status deployment/nginx-test --timeout=180s
+```
+
+Проверим состояние Deployment и распределение Pod по узлам:
+
+```
+kubectl get deployment nginx-test
+kubectl get pods -o wide
+```
+
+В результате все четыре реплики nginx успешно запущены и находятся в состоянии `Running`.
+
+Kubernetes распределил Pod по четырём worker-узлам: `k8s-worker-1`, `k8s-worker-2`, `k8s-worker-3` и `k8s-worker-4`.
+
+![img](img/image42.png)
+
 
 ## Ссылки на файлы
 
