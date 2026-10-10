@@ -1,0 +1,8 @@
+# Vagrant
+**/.vagrant/
+*.box
+
+# Terraform (если используется)
+**/.terraform/
+*.tfstate
+*.tfstate.*
