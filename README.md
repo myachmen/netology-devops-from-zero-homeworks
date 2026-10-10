@@ -143,3 +143,100 @@ ip -br link
 sudo iptables-save | grep -E 'FLANNEL|CNI-|KUBE-' | head -30
 sudo systemctl is-active containerd
 ```
+![img](img/image10.png)
+
+Выполним инициализацию Kubernetes:
+
+```
+sudo kubeadm init \
+  --apiserver-advertise-address=192.168.57.10 \
+  --control-plane-endpoint=192.168.57.10:6443 \
+  --pod-network-cidr=10.244.0.0/16 \
+  --service-cidr=10.96.0.0/12
+```
+
+![img](img/image11.png)
+
+![img](img/image12.png)
+
+Настроим `kubectl` на ноде `k8s-master`.
+После kubeadm reset и повторной инициализации старый файл ~/.kube/config мог остаться от предыдущего кластера. Поэтому заменим его актуальной конфигурацией:
+
+```
+mkdir -p "$HOME/.kube"
+sudo cp /etc/kubernetes/admin.conf "$HOME/.kube/config"
+sudo chown "$(id -u):$(id -g)" "$HOME/.kube/config"
+chmod 600 "$HOME/.kube/config"
+```
+
+Проверим доступ к Kubernetes API:
+
+```
+kubectl cluster-info
+```
+
+![img](img/image13.png)
+
+Проверим состояние нод и системных подов:
+
+```
+kubectl get nodes -o wide
+kubectl get pods -n kube-system -o wide
+```
+
+![img](img/image14.png)
+
+Приступим к установке Calico.
+
+Проверим доступность ресурсов Calico:
+
+```
+curl -IL --max-time 20 \
+  https://raw.githubusercontent.com/projectcalico/calico/master/manifests/tigera-operator.yaml
+```
+
+![img](img/image15.png)
+
+Создадим каталог для установочных файлов:
+
+```
+mkdir -p ~/calico-install
+cd ~/calico-install
+```
+
+Cкачаем Tigera Operator:
+
+```
+curl -fL \
+  https://raw.githubusercontent.com/projectcalico/calico/v3.33.0/manifests/tigera-operator.yaml \
+  -o tigera-operator.yaml
+```
+
+Проверим файл:
+
+```
+ls -lh tigera-operator.yaml
+head -n 15 tigera-operator.yaml
+```
+
+![img](img/image16.png)
+
+Скачиваем CRD Calico v3.33.0:
+
+```
+curl -fL \
+  https://raw.githubusercontent.com/projectcalico/calico/v3.33.0/manifests/operator-crds.yaml \
+  -o operator-crds.yaml
+```
+
+Проверим скачанный файл:
+
+```
+ls -lh operator-crds.yaml
+```
+
+Проверим количество определений CRD:
+
+```
+grep -c '^kind: CustomResourceDefinition' operator-crds.yaml
+```
