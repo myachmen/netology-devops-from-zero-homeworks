@@ -409,3 +409,224 @@ kubectl get namespace app
 
 ![img](img/image32.png)
 
+Приступим к созданию Deployment.
+Создадим файл манифеста `frontend-deployment.yaml` следующего содержания:
+
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: wbitt/network-multitool:latest
+          ports:
+            - containerPort: 80
+```
+
+Создадим Service для frontend.
+Создадим файл манифеста `frontend-service.yaml` следующего содержания:
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: app
+spec:
+  selector:
+    app: frontend
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+```
+
+Создадим Deployment для backend.
+Создадим файл манифеста `backend-deployment.yaml` следующего содержания:
+
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: wbitt/network-multitool:latest
+          ports:
+            - containerPort: 80
+```
+
+Создадим Service для backend.
+Создадим файл манифеста `backend-service.yaml` следующего содержания:
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: app
+spec:
+  selector:
+    app: backend
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+```
+
+Создадим Deployment для cache.
+Создадим файл манифеста `cache-deployment.yaml` следующего содержания:
+
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cache
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cache
+  template:
+    metadata:
+      labels:
+        app: cache
+    spec:
+      containers:
+        - name: cache
+          image: wbitt/network-multitool:latest
+          ports:
+            - containerPort: 80
+```
+
+Создадим Service для cache.
+Создадим файл манифеста `cache-service.yaml` следующего содержания:
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: cache
+  namespace: app
+spec:
+  selector:
+    app: cache
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+```
+
+Для воспроизводимости конфигурации сохраним namespace YAML-манифест в репозитории.
+Создадим файл манифеста `namespace.yaml` следующего содержания:
+
+```
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: app
+```
+
+Перенесём манифесты на Kubernetes master:
+
+```
+vagrant upload ..\k8s-network-policy /home/vagrant/k8s-network-policy k8s-master
+```
+![img](img/image33.png)
+
+На ноде `k8s-master` проверим, что файлы загружены:
+
+```
+ls -la ~/k8s-network-policy/
+```
+
+![img](img/image34.png)
+
+Выполним проверку манифестов Kubernetes:
+
+```
+kubectl apply --dry-run=server -f ~/k8s-network-policy/
+```
+
+![img](img/image35.png)
+
+Предупреждение в выводе появилось потому, что namespace app мы первоначально создали императивной командой: `kubectl create namespace app`.
+А теперь пытаемся управлять им декларативно через `kubectl apply`.
+Kubernetes сообщает, что у существующего namespace отсутствует аннотация с предыдущей применённой конфигурацией. При обычном `kubectl apply` она будет добавлена автоматически.
+
+Приступим к развёртыванию приложений.
+На ноде `k8s-master` выполним:
+
+```
+kubectl apply -f ~/k8s-network-policy/
+```
+
+![img](img/image36.png)
+
+Проверим Deployment, а так же состояние Pod и Service:
+
+```
+kubectl get deployments -n app
+kubectl get pods,services -n app -o wide
+```
+
+![img](img/image37.png)
+
+Приступим к проверке сетевых соединений.
+Проверим соединение frontend → backend:
+
+```
+kubectl exec -n app deployment/frontend -- \
+  curl -sS --connect-timeout 3 --max-time 5 http://backend
+```
+
+![img](img/image38.png)
+
+Проверим соединение frontend → cache:
+
+```
+kubectl exec -n app deployment/frontend -- \
+  curl -sS --connect-timeout 3 --max-time 5 http://cache
+```
+
+![img](img/image39.png)
+
+Проверим соединение backend → cache:
+
+```
+kubectl exec -n app deployment/backend -- \
+  curl -sS --connect-timeout 3 --max-time 5 http://cache
+```
+
+![img](img/image40.png)
+
