@@ -240,3 +240,172 @@ ls -lh operator-crds.yaml
 ```
 grep -c '^kind: CustomResourceDefinition' operator-crds.yaml
 ```
+
+![img](img/image17.png)
+
+Устанавливим CRD.
+На ноде `k8s-master`, находясь в каталоге `~/calico-install`, выполним:
+
+```
+kubectl apply --server-side -f operator-crds.yaml
+```
+
+![img](img/image18.png)
+
+После завершения проверим:
+
+```
+kubectl get crd | grep operator.tigera.io
+```
+
+так же проверим, что Kubernetes зарегистрировал ресурс `Installation`:
+
+```
+kubectl get crd installations.operator.tigera.io
+```
+
+![img](img/image19.png)
+
+Устанавливаем Tigera Operator.
+На ноде `k8s-master`, находясь в каталоге `~/calico-install`, выполним:
+
+```
+kubectl apply -f tigera-operator.yaml
+```
+
+![img](img/image20.png)
+
+После установки проверим созданные ресурсы:
+
+```
+kubectl get deployment -n tigera-operator
+kubectl get pods -n tigera-operator -o wide
+```
+
+![img](img/image21.png)
+
+Дождёмся готовности оператора:
+
+```
+kubectl rollout status deployment/tigera-operator \
+  -n tigera-operator \
+  --timeout=180s
+```
+
+![img](img/image22.png)
+
+Создадим файл манифеста `custom-resources.yaml` следующего содержания:
+
+```
+apiVersion: operator.tigera.io/v1
+kind: Installation
+metadata:
+  name: default
+spec:
+  registry: quay.io/
+  calicoNetwork:
+    bgp: Disabled
+    ipPools:
+      - cidr: 10.244.0.0/16
+        encapsulation: VXLANCrossSubnet
+        natOutgoing: Enabled
+        nodeSelector: all()
+    nodeAddressAutodetectionV4:
+      interface: eth1
+```
+
+Проверим манифест:
+
+```
+kubectl apply --dry-run=server -f custom-resources.yaml
+```
+
+![img](img/image23.png)
+
+Устанавим Calico:
+
+```
+kubectl apply -f custom-resources.yaml
+```
+
+![img](img/image24.png)
+
+Проверим развёртывание:
+
+```
+kubectl get installation default -o yaml
+kubectl get pods -A -o wide
+```
+
+![img](img/image25.png)
+
+Проверим состояние master-ноды:
+
+```
+kubectl get nodes -o wide
+```
+
+![img](img/image26.png)
+
+Приступим к подключению worker-нод.
+На ноде `k8s-master` получим команду подключения:
+
+```
+kubeadm token create --print-join-command
+```
+
+![img](img/image27.png)
+
+Подключимся к ноде `k8s-worker-1` и выполним команду подключение с использованием `sudo`:
+
+```
+sudo kubeadm join 192.168.57.10:6443 \
+  --token <токен> \
+  --discovery-token-ca-cert-hash sha256:<хеш>
+```
+![img](img/image28.png)
+
+Подключимся к ноде `k8s-master` и проверим подключение:
+
+```
+kubectl get nodes -o wide
+```
+
+![img](img/image29.png)
+
+Проверим Calico на первой worker-ноде:
+
+```
+kubectl get pods -n calico-system -o wide
+kubectl get nodes
+```
+
+![img](img/image30.png)
+
+Выполним подключение оставшихся worker-нод/
+Для этого выполним еа них ту же команду для подключения.
+
+Выполним проверку всего кластера на ноде `k8s-master`:
+
+```
+kubectl get nodes -o wide
+kubectl get pods -n calico-system -o wide
+```
+
+![img](img/image31.png)
+
+Приступим к работе с Kubernetes NetworkPolicy.
+Создадим namespace `app`:
+
+```
+kubectl create namespace app
+```
+
+Проверим создание:
+
+```
+kubectl get namespace app
+```
+
+![img](img/image32.png)
+
