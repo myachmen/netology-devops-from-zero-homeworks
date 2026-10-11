@@ -243,7 +243,7 @@ grep -c '^kind: CustomResourceDefinition' operator-crds.yaml
 
 ![img](img/image17.png)
 
-Устанавливим CRD.
+Установим CRD.
 На ноде `k8s-master`, находясь в каталоге `~/calico-install`, выполним:
 
 ```
@@ -258,7 +258,7 @@ kubectl apply --server-side -f operator-crds.yaml
 kubectl get crd | grep operator.tigera.io
 ```
 
-так же проверим, что Kubernetes зарегистрировал ресурс `Installation`:
+Также проверим, что Kubernetes зарегистрировал ресурс `Installation`:
 
 ```
 kubectl get crd installations.operator.tigera.io
@@ -356,7 +356,7 @@ kubeadm token create --print-join-command
 
 ![img](img/image27.png)
 
-Подключимся к ноде `k8s-worker-1` и выполним команду подключение с использованием `sudo`:
+Подключимся к ноде `k8s-worker-1` и выполним команду подключения с использованием `sudo`:
 
 ```
 sudo kubeadm join 192.168.57.10:6443 \
@@ -382,7 +382,7 @@ kubectl get nodes
 
 ![img](img/image30.png)
 
-Выполним подключение оставшихся worker-нод/
+Выполним подключение оставшихся worker-нод.
 Для этого выполним на них ту же команду для подключения.
 
 Выполним проверку всего кластера на ноде `k8s-master`:
@@ -593,7 +593,7 @@ kubectl apply -f ~/k8s-network-policy/
 
 ![img](img/image36.png)
 
-Проверим Deployment, а так же состояние Pod и Service:
+Проверим Deployment, а также состояние Pod и Service:
 
 ```
 kubectl get deployments -n app
