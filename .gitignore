@@ -6,3 +6,6 @@
 **/.terraform/
 *.tfstate
 *.tfstate.*
+
+# Local Kubernetes Vagrant environment
+/k8s-install/
