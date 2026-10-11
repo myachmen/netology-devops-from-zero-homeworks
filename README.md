@@ -630,3 +630,243 @@ kubectl exec -n app deployment/backend -- \
 
 ![img](img/image40.png)
 
+Создадим базовую запрещающую политику.
+Для создания политики `default-deny`, которая запретит входящие и исходящие соединения для всех Pod в namespace `app` создадим файл манифеста `namespace.yaml` следующего содержания:
+
+```
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: app
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+```
+
+Создадим политику разрешающую соединения frontend → backend.
+Создадим файл манифеста `allow-frontend-to-backend.yaml` следующего содержания:
+
+```
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-frontend-to-backend
+  namespace: app
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: frontend
+      ports:
+        - protocol: TCP
+          port: 80
+```
+
+Создадим политику разрешающую соединения backend → cache.
+Создадим файл манифеста `allow-backend-to-cache.yaml` следующего содержания:
+
+```
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-to-cache
+  namespace: app
+spec:
+  podSelector:
+    matchLabels:
+      app: cache
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: backend
+      ports:
+        - protocol: TCP
+          port: 80
+```
+
+Создадим политику разрешающую исходящий трафик.
+Создадим файл манифеста `allow-app-egress.yaml`, который разрешит исходящие подключения только по нужным направлениям:
+
+```
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-app-egress
+  namespace: app
+spec:
+  podSelector:
+    matchLabels:
+      app: frontend
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: backend
+      ports:
+        - protocol: TCP
+          port: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-egress
+  namespace: app
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: cache
+      ports:
+        - protocol: TCP
+          port: 80
+```
+
+Создадим политику разрешающую DNS.
+В Kubernetes за разрешение имён обычно отвечает CoreDNS. Он находится в namespace kube-system, поэтому разрешение DNS нужно настроить отдельно.
+Создадим файл манифеста `allow-dns.yaml` следующего содержания:
+
+```
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: app
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+```
+
+Перенесём обновлённые файлы манифестов на Kubernetes master:
+
+```
+vagrant upload ..\k8s-network-policy /home/vagrant/k8s-network-policy k8s-master
+```
+
+![img](img/image41.png)
+
+На ноде `k8s-master` проверим, что файлы загружены:
+
+```
+ls -la ~/k8s-network-policy/
+```
+
+![img](img/image42.png)
+
+Выполним проверку манифестов Kubernetes:
+
+```
+kubectl apply --dry-run=server -f ~/k8s-network-policy/
+```
+
+![img](img/image43.png)
+
+Применим NetworkPolicy.
+На ноде `k8s-master` выполним:
+
+```
+kubectl apply -f ~/k8s-network-policy/
+```
+
+![img](img/image44.png)
+
+Проверим созданные политики:
+
+```
+kubectl get networkpolicy -n app
+```
+
+![img](img/image45.png)
+
+Проверим, что приложения продолжают работать:
+
+```
+kubectl get pods -n app -o wide
+```
+
+![img](img/image46.png)
+
+Приступим к проверке разрешённых соединений.
+Для проверки соединения frontend → backend, на ноде `k8s-master` выполним:
+
+```
+kubectl exec -n app deployment/frontend -- \
+  curl -sS --connect-timeout 3 --max-time 5 http://backend
+```
+
+![img](img/image47.png)
+
+Для проверки соединения backend → cache, на ноде `k8s-master` выполним:
+
+```
+kubectl exec -n app deployment/backend -- \
+  curl -sS --connect-timeout 3 --max-time 5 http://cache
+```
+
+![img](img/image48.png)
+
+Теперь проверим запрещённые соединения.
+Для проверки соединения frontend → cache (должно быть запрещёно), на ноде `k8s-master` выполним:
+
+```
+kubectl exec -n app deployment/frontend -- \
+  curl -sS --connect-timeout 3 --max-time 5 http://cache
+```
+
+![img](img/image49.png)
+
+Для проверки соединения backend → frontend (должен быть запрещён), на ноде `k8s-master` выполним:
+
+```
+kubectl exec -n app deployment/backend -- \
+  curl -sS --connect-timeout 3 --max-time 5 http://frontend
+```
+
+![img](img/image50.png)
+
+Для проверки соединения backend → frontend (должен быть запрещён), на ноде `k8s-master` выполним:
+
+```
+kubectl exec -n app deployment/cache -- \
+  curl -sS --connect-timeout 3 --max-time 5 http://backend
+```
+
+![img](img/image51.png)
+
+
+
+
+
