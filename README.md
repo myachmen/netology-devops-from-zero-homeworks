@@ -67,7 +67,7 @@ sudo ip link delete cni0
 
 ![img](img/image4.png)
 
-Подготавливим worker-ноды.
+Подготовим worker-ноды.
 Выполним аналогичную очистку на четырёх worker-нодах.
 На каждой из них (`k8s-worker-1` ... `k8s-worker-4`) последовательно выполним:
 
@@ -322,7 +322,7 @@ kubectl apply --dry-run=server -f custom-resources.yaml
 
 ![img](img/image23.png)
 
-Устанавим Calico:
+Установим Calico:
 
 ```
 kubectl apply -f custom-resources.yaml
@@ -383,7 +383,7 @@ kubectl get nodes
 ![img](img/image30.png)
 
 Выполним подключение оставшихся worker-нод/
-Для этого выполним еа них ту же команду для подключения.
+Для этого выполним на них ту же команду для подключения.
 
 Выполним проверку всего кластера на ноде `k8s-master`:
 
@@ -839,7 +839,7 @@ kubectl exec -n app deployment/backend -- \
 ![img](img/image48.png)
 
 Теперь проверим запрещённые соединения.
-Для проверки соединения frontend → cache (должно быть запрещёно), на ноде `k8s-master` выполним:
+Для проверки соединения frontend → cache (должно быть запрещено), на ноде `k8s-master` выполним:
 
 ```
 kubectl exec -n app deployment/frontend -- \
@@ -866,6 +866,41 @@ kubectl exec -n app deployment/cache -- \
 
 ![img](img/image51.png)
 
+### Результаты проверки сетевых политик
+
+После применения NetworkPolicy были проверены разрешённые и запрещённые соединения между приложениями в namespace `app`.
+
+| Источник | Назначение | Ожидаемый результат | Фактический результат |
+|---|---|---|---|
+| frontend | backend | Разрешено | HTTP-ответ получен |
+| backend | cache | Разрешено | HTTP-ответ получен |
+| frontend | cache | Запрещено | Тайм-аут соединения |
+| backend | frontend | Запрещено | Тайм-аут соединения |
+| cache | backend | Запрещено | Тайм-аут соединения |
+
+**Вывод:** с помощью Calico и Kubernetes NetworkPolicy удалось настроить сетевую изоляцию приложений. Разрешены соединения `frontend → backend → cache`, остальные проверенные направления заблокированы.
+
+### Ссылки на манифесты
+
+**Namespace:**
+- [namespace.yaml](k8s-network-policy/namespace.yaml)
+
+**Deployment:**
+- [frontend-deployment.yaml](k8s-network-policy/frontend-deployment.yaml)
+- [backend-deployment.yaml](k8s-network-policy/backend-deployment.yaml)
+- [cache-deployment.yaml](k8s-network-policy/cache-deployment.yaml)
+
+**Service:**
+- [frontend-service.yaml](k8s-network-policy/frontend-service.yaml)
+- [backend-service.yaml](k8s-network-policy/backend-service.yaml)
+- [cache-service.yaml](k8s-network-policy/cache-service.yaml)
+
+**NetworkPolicy:**
+- [default-deny.yaml](k8s-network-policy/default-deny.yaml)
+- [allow-frontend-to-backend.yaml](k8s-network-policy/allow-frontend-to-backend.yaml)
+- [allow-backend-to-cache.yaml](k8s-network-policy/allow-backend-to-cache.yaml)
+- [allow-app-egress.yaml](k8s-network-policy/allow-app-egress.yaml)
+- [allow-dns.yaml](k8s-network-policy/allow-dns.yaml)
 
 
 
