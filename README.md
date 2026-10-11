@@ -631,7 +631,7 @@ kubectl exec -n app deployment/backend -- \
 ![img](img/image40.png)
 
 Создадим базовую запрещающую политику.
-Для создания политики `default-deny`, которая запретит входящие и исходящие соединения для всех Pod в namespace `app` создадим файл манифеста `namespace.yaml` следующего содержания:
+Создадим файл default-deny.yaml, запрещающий входящий и исходящий трафик для всех Pod в namespace app, за исключением соединений, разрешённых отдельными политиками:
 
 ```
 apiVersion: networking.k8s.io/v1
@@ -857,7 +857,7 @@ kubectl exec -n app deployment/backend -- \
 
 ![img](img/image50.png)
 
-Для проверки соединения backend → frontend (должен быть запрещён), на ноде `k8s-master` выполним:
+Для проверки соединения cache → backend (должен быть запрещён), на ноде `k8s-master` выполним:
 
 ```
 kubectl exec -n app deployment/cache -- \
