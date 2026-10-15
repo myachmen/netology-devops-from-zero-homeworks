@@ -1,45 +1,36 @@
-![GitHub](https://img.shields.io/badge/GitHub-Repository-black)
-![Course](https://img.shields.io/badge/Course-DevOps-blue)
-![Platform](https://img.shields.io/badge/Platform-Netology-green)
+# Домашнее задание по теме "Организация сети" Ячмень Марк Викторович
 
+## Задание 1. Yandex Cloud 
 
+**Что нужно сделать**
 
-# Домашние задания по курсу "Devops-инженер с нуля: расширенный курс" от Нетологии
+1. Создать пустую VPC. Выбрать зону.
+2. Публичная подсеть.
 
-## Модуль "IT-системы и операционная система Linux" [сертификат](Electronic_certificate/SLINA-51-9785269.pdf)
+ - Создать в VPC subnet с названием public, сетью 192.168.10.0/24.
+ - Создать в этой подсети NAT-инстанс, присвоив ему адрес 192.168.10.254. В качестве image_id использовать fd80mrhj8fl2oe87o4e1.
+ - Создать в этой публичной подсети виртуалку с публичным IP, подключиться к ней и убедиться, что есть доступ к интернету.
+3. Приватная подсеть.
+ - Создать в VPC subnet с названием private, сетью 192.168.20.0/24.
+ - Создать route table. Добавить статический маршрут, направляющий весь исходящий трафик private сети в NAT-инстанс.
+ - Создать в этой приватной подсети виртуалку с внутренним IP, подключиться к ней через виртуалку, созданную ранее, и убедиться, что есть доступ к интернету.
 
-- [Архитектура компьютера. Операционная система](Materials/Computer_architecture_Operating_system.pdf) ([docx](Materials/Computer_architecture_Operating_system.docx))
-- [Знакомство с операционной системой Linux](Materials/Introduction_to_the_Linux_operating_system.pdf) ([docx](Materials/Introduction_to_the_Linux_operating_system.docx))
-- [Основы работы в терминалe ОС Linux](Materials/Basics_of_working_in_the_Linux_OS_terminal.pdf) ([docx](Materials/Basics_of_working_in_the_Linux_OS_terminal.docx))
+## Решение 1
 
-## Модуль "Операционная система Linux" [сертификат](Electronic_certificate/SLINB-51-9785269.pdf)
+Для выполнения задания с помощью Terraform развернули сетевую инфраструктуру в Yandex Cloud.
 
-- [Процессы, управление процессами](Materials/Linux_operating_system/Processes_process_management.pdf) ([docx](Materials/Linux_operating_system/Processes_process_management.docx))
-- [Дисковые системы](Materials/Linux_operating_system/Disk_systems.pdf) ([docx](Materials/Linux_operating_system/Disk_systems.docx))
+Создали виртуальную сеть VPC `netology-network` с двумя подсетями:
 
-## Модуль "Администрирование операционной системы Linux" [сертификат](Electronic_certificate/)
+- Публичная подсеть `192.168.10.0/24`, в которой размещены NAT-инстанс и виртуальная машина `public-vm` с публичными IP-адресами.
+- Приватная подсеть `192.168.20.0/24`, в которой размещена виртуальная машина `private-vm` без публичного IP-адреса.
 
-## Модуль "Программирование на Bash" [сертификат](Electronic_certificate/)
+Для приватной подсети настроили таблицу маршрутизации, направляющую исходящий трафик через NAT-инстанс с внутренним адресом `192.168.10.254`.
 
-## Модуль "Сеть, сетевые протоколы" [сертификат](Electronic_certificate/)
+Все ресурсы созданы в зоне доступности `ru-central1-d`.
 
-## Модуль "Виртуализация" [сертификат](Electronic_certificate/)
+### 1. Создание сетевой инфраструктуры
 
-## Модуль "Автоматизация и CI/СD" [сертификат](Electronic_certificate/)
+С помощью Terraform создали виртуальную сеть, публичную и приватную подсети, таблицу маршрутизации и группу безопасности.
 
-## Модуль "Мониторинг" [сертификат](Electronic_certificate/SLINA-51-9785269.pdf)
+Для описания сетевой инфраструктуры использовали файлы `network.tf`, `routes.tf` и `security.tf`.
 
-## Модуль "Отказоустойчивость" [сертификат](Electronic_certificate/)
-
-## Модуль "Системы хранения и передачи данных" [сертификат](Electronic_certificate/)
-
-## Модуль "Реляционные базы данных и администрирование баз данных" [сертификат](Electronic_certificate/)
-
-## Модуль "Информационная безопасность" [сертификат](Electronic_certificate/)
-
-
-## Модуль "Системы управления версиями" [сертификат](Electronic_certificate/)
-
-- [Системы контроля версий](../../tree/hw-Version_control_systems)
-- [Основы Git](../../tree/hw-Git_fundamentals)
-- [Инструменты Git](../../tree/hw-Git_tools)
