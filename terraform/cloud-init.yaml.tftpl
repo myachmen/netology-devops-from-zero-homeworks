@@ -1,0 +1,29 @@
+#cloud-config
+
+users:
+  - default
+  - name: netology
+    groups: sudo
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+
+write_files:
+  - path: /var/www/html/index.html
+    owner: root:root
+    permissions: '0644'
+    content: |
+      <!DOCTYPE html>
+      <html lang="ru">
+      <head>
+        <meta charset="UTF-8">
+        <title>Netology - Load Balancer</title>
+      </head>
+      <body>
+        <h1>Netology - Instance Group</h1>
+        <p>Web server: ${hostname}</p>
+        <p>Image from Yandex Object Storage:</p>
+        <img src="${image_url}" alt="Netology image" width="500">
+      </body>
+      </html>
