@@ -35,3 +35,5 @@ Thumbs.db
 terraform-state-backup.json
 # Terraform execution logs
 terraform-apply.log
+
+terraform-state-before-security.json
