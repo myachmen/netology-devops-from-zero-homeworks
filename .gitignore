@@ -37,3 +37,6 @@ terraform-state-backup.json
 terraform-apply.log
 
 terraform-state-before-security.json
+
+# Terraform state snapshots
+terraform-state-before-*.json
