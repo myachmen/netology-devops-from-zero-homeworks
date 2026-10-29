@@ -56,6 +56,7 @@ resource "yandex_compute_instance" "k8s" {
   network_interface {
     subnet_id          = each.value.subnet_id
     nat                = true
+    nat_ip_address     = each.key == "k8s-worker-1" ? "158.160.190.231" : null
     security_group_ids = [yandex_vpc_security_group.k8s.id]
   }
 
