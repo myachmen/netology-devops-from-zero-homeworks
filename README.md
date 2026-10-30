@@ -1,45 +1,139 @@
-![GitHub](https://img.shields.io/badge/GitHub-Repository-black)
-![Course](https://img.shields.io/badge/Course-DevOps-blue)
-![Platform](https://img.shields.io/badge/Platform-Netology-green)
+# Дипломный проект: DevOps-инфраструктура в Yandex Cloud
 
+> **Статус:** в работе. Облачная инфраструктура и Kubernetes-кластер развёрнуты и проверены; приложение, мониторинг и CI/CD ещё предстоит реализовать.
+>
+> **Основа проекта:** [дипломное задание Нетологии «Дипломный практикум в Yandex.Cloud»](https://github.com/netology-code/devops-diplom-yandexcloud).
 
+## Цель проекта
 
-# Домашние задания по курсу "Devops-инженер с нуля: расширенный курс" от Нетологии
+Создать воспроизводимую инфраструктуру в Yandex Cloud, развернуть в ней Kubernetes, опубликовать тестовое контейнерное приложение, организовать мониторинг и настроить автоматизированные процессы сборки, доставки приложения и управления инфраструктурой.
 
-## Модуль "IT-системы и операционная система Linux" [сертификат](Electronic_certificate/SLINA-51-9785269.pdf)
+Для Kubernetes выбран **self-hosted** вариант с установкой через Ansible и Kubespray вместо управляемого Kubernetes-сервиса.
 
-- [Архитектура компьютера. Операционная система](Materials/Computer_architecture_Operating_system.pdf) ([docx](Materials/Computer_architecture_Operating_system.docx))
-- [Знакомство с операционной системой Linux](Materials/Introduction_to_the_Linux_operating_system.pdf) ([docx](Materials/Introduction_to_the_Linux_operating_system.docx))
-- [Основы работы в терминалe ОС Linux](Materials/Basics_of_working_in_the_Linux_OS_terminal.pdf) ([docx](Materials/Basics_of_working_in_the_Linux_OS_terminal.docx))
+## Состояние выполнения
 
-## Модуль "Операционная система Linux" [сертификат](Electronic_certificate/SLINB-51-9785269.pdf)
+| Этап задания | Состояние | Результат и дальнейшие действия |
+|---|---|---|
+| 1. Создание облачной инфраструктуры | Частично выполнен | Terraform-код и удалённый S3 backend готовы, ВМ и сеть созданы. Проверку полного цикла `destroy` / `apply` без ручных действий ещё предстоит документировать. |
+| 2. Создание Kubernetes-кластера | Развёрнут, проверен | 3 узла `Ready`; системные Pod работают; Calico обеспечивает межузловое взаимодействие. Дополнительно требуется оформить доступ через `~/.kube/config` по требованиям задания. |
+| 3. Создание тестового приложения | Не начат | Отдельный репозиторий приложения, Dockerfile, сборка и публикация образа в registry. |
+| 4. Мониторинг, деплой приложения и автоматизация Terraform | Не начат | Prometheus, Grafana, Alertmanager, экспортёры, публикация интерфейсов и приложения; Atlantis, Terraform Cloud или Terraform CI/CD pipeline. |
+| 5. CI/CD приложения | Не начат | Сборка при коммите, публикация образа; сборка по тегу и автоматическое развёртывание версии в Kubernetes. |
 
-- [Процессы, управление процессами](Materials/Linux_operating_system/Processes_process_management.pdf) ([docx](Materials/Linux_operating_system/Processes_process_management.docx))
-- [Дисковые системы](Materials/Linux_operating_system/Disk_systems.pdf) ([docx](Materials/Linux_operating_system/Disk_systems.docx))
+## Архитектура
 
-## Модуль "Администрирование операционной системы Linux" [сертификат](Electronic_certificate/)
+### Облачная сеть
 
-## Модуль "Программирование на Bash" [сертификат](Electronic_certificate/)
+В Terraform описаны VPC `diplom-network` и три подсети в разных зонах доступности:
 
-## Модуль "Сеть, сетевые протоколы" [сертификат](Electronic_certificate/)
+| Подсеть | Зона | CIDR |
+|---|---|---|
+| `diplom-subnet-a` | `ru-central1-a` | `10.10.1.0/24` |
+| `diplom-subnet-d` | `ru-central1-d` | `10.10.2.0/24` |
+| `diplom-subnet-e` | `ru-central1-e` | `10.10.3.0/24` |
 
-## Модуль "Виртуализация" [сертификат](Electronic_certificate/)
+В текущем развёртывании используется первая и вторая подсети; третья создана как часть сетевой инфраструктуры. Kubernetes-узлы распределены по двум зонам доступности, а не по трём.
 
-## Модуль "Автоматизация и CI/СD" [сертификат](Electronic_certificate/)
+### Виртуальные машины Kubernetes
 
-## Модуль "Мониторинг" [сертификат](Electronic_certificate/SLINA-51-9785269.pdf)
+| Имя | Роль | Зона | Внутренний IP | vCPU | RAM | Диск |
+|---|---|---|---|---:|---:|---:|
+| `k8s-control-1` | Control Plane / etcd | `ru-central1-a` | `10.10.1.12` | 2 | 4 ГБ | 30 ГБ |
+| `k8s-worker-1` | Worker | `ru-central1-d` | `10.10.2.28` | 2 | 6 ГБ | 50 ГБ |
+| `k8s-worker-2` | Worker | `ru-central1-d` | `10.10.2.34` | 2 | 6 ГБ | 50 ГБ |
 
-## Модуль "Отказоустойчивость" [сертификат](Electronic_certificate/)
+ОС узлов — Ubuntu 22.04 LTS. Для `k8s-worker-1` закреплён публичный IP `158.160.190.231` после устранения проблем с исходящими соединениями. Публичные IP других узлов, выделяемые динамически, не фиксируются в этом документе.
 
-## Модуль "Системы хранения и передачи данных" [сертификат](Electronic_certificate/)
+В учебной конфигурации управляющая машина подключается к worker-узлам по SSH через control-plane (`ProxyJump`). Выделенного bastion-хоста нет.
 
-## Модуль "Реляционные базы данных и администрирование баз данных" [сертификат](Electronic_certificate/)
+## Этап 1. Подготовка инфраструктуры Terraform
 
-## Модуль "Информационная безопасность" [сертификат](Electronic_certificate/)
+Terraform-конфигурации разделены на два независимых каталога:
 
+- [`terraform/bootstrap/`](terraform/bootstrap/) — сервисная учётная запись, IAM-права, статический ключ доступа и бакет Object Storage для Terraform state.
+- [`terraform/infrastructure/`](terraform/infrastructure/) — S3 backend, VPC, подсети, security group и три Compute Cloud ВМ.
 
-## Модуль "Системы управления версиями" [сертификат](Electronic_certificate/)
+Основная конфигурация использует удалённое состояние в бакете `netology-diplom-tfstate-myachmen`, ключ `infrastructure/terraform.tfstate`. Ключи для S3 backend получаются через outputs bootstrap-конфигурации и **не публикуются** в Git.
 
-- [Системы контроля версий](../../tree/hw-Version_control_systems)
-- [Основы Git](../../tree/hw-Git_fundamentals)
-- [Инструменты Git](../../tree/hw-Git_tools)
+Для развёртывания в текущей среде использовались Terraform и Yandex Cloud CLI. После изменения публичного IP `k8s-worker-1` конфигурация и состояние Terraform были синхронизированы: контрольный `terraform plan` завершился сообщением `No changes`.
+
+**Что ещё требуется проверить по заданию:** воспроизводимый полный цикл уничтожения и создания инфраструктуры без дополнительных ручных изменений, а также минимально необходимые права сервисной учётной записи. Отдельно стоит сузить SSH-доступ: сейчас в [`security.tf`](terraform/infrastructure/security.tf) порт 22 открыт для `0.0.0.0/0`.
+
+## Этап 2. Установка и проверка Kubernetes
+
+Кластер установлен через **Kubespray v2.29.1** (commit `0c6a29553f90c55cba5e0e359470321dc7cf7d29`) с управляющей виртуальной машины Ubuntu 22.04 LTS.
+
+| Компонент | Версия / реализация |
+|---|---|
+| Kubernetes | `v1.33.7` |
+| Kubespray | `v2.29.1` |
+| Container Runtime | `containerd 2.1.5` |
+| CNI | Calico (VXLAN) |
+| ОС Kubernetes-узлов | Ubuntu 22.04 LTS |
+
+Использован стандартный набор `group_vars` из Kubespray v2.29.1; сравнение рабочего каталога с `inventory/sample/group_vars` не выявило отличий.
+
+Конфигурация и подробная инструкция:
+
+- **[Развёртывание Kubernetes с помощью Kubespray](ansible/README.md)**;
+- [Ansible inventory](ansible/inventory/diplom/hosts.yaml);
+- [Пример SSH-конфигурации](ansible/ssh_config.example).
+
+### Проверки Kubernetes
+
+После установки и повторного запуска виртуальных машин выполнены проверки:
+
+1. Ansible `ping` завершился успешно на всех трёх узлах.
+2. `kubectl get nodes -o wide` показал три узла в состоянии `Ready`.
+3. Системные Pod в `kube-system`, включая Calico, CoreDNS, `kube-proxy` и компоненты control-plane, работали (`Running`, `1/1`).
+4. Тестовый HTTP-запрос из Pod на `k8s-worker-1` в nginx Pod на `k8s-worker-2` завершился с `HTTP_CODE=200`, что подтвердило межузловую связность через Calico. Временные тестовые Pod после проверки удалены.
+
+Команды просмотра состояния (на control-plane):
+
+```bash
+sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf get nodes -o wide
+sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf get pods --all-namespaces -o wide
+```
+
+**Примечание:** пока используется `/etc/kubernetes/admin.conf` на control-plane. Наличие отдельного рабочего `~/.kube/config`, требуемого в исходном задании, нужно проверить и задокументировать.
+
+## Этап 3. Тестовое приложение — запланировано
+
+Согласно [заданию](https://github.com/netology-code/devops-diplom-yandexcloud), предстоит:
+
+- создать отдельный Git-репозиторий для простого веб-приложения (например, nginx со статической страницей);
+- подготовить собственный `Dockerfile`;
+- собрать образ и опубликовать его в Docker Hub или Yandex Container Registry;
+- указать здесь ссылки на репозиторий и опубликованный образ.
+
+## Этап 4. Мониторинг, приложение и управление Terraform — запланировано
+
+Требуется развернуть в Kubernetes Prometheus, Grafana, Alertmanager и экспортёры метрик, подготовить дашборды, опубликовать Grafana и тестовое приложение по HTTP на порту 80.
+
+Также по заданию необходимо реализовать **один из вариантов автоматизации Terraform**: Atlantis, Terraform Cloud либо Terraform pipeline в CI/CD. После реализации здесь появятся ссылки на конфигурацию, интерфейсы и подтверждающие материалы.
+
+## Этап 5. CI/CD приложения — запланировано
+
+Предстоит настроить процесс, который:
+
+- при коммите в репозиторий приложения собирает Docker-образ и публикует его в registry;
+- при создании Git-тега (например, `v1.0.0`) собирает версионированный образ и автоматически разворачивает соответствующую версию в Kubernetes.
+
+После реализации в отчёт будут добавлены схема пайплайна, ссылки на workflow и успешные запуски.
+
+## Материалы для сдачи диплома
+
+В итоговую версию этого README необходимо добавить:
+
+- подтверждение воспроизводимого создания облачной инфраструктуры Terraform;
+- свидетельства работы выбранной автоматизации Terraform (Atlantis / Terraform Cloud / CI-CD pipeline);
+- ссылку на репозиторий тестового приложения и Docker-образ;
+- конфигурации развёртывания приложения и мониторинга;
+- ссылки на работающие тестовое приложение и Grafana, а также данные доступа для проверяющего через согласованный безопасный канал;
+- скриншоты результатов и пайплайнов.
+
+На текущем этапе готовы [Terraform-конфигурации](terraform/) и [документация развёртывания Kubernetes](ansible/README.md). Остальные материалы будут добавлены по мере выполнения работ.
+
+---
+
+*Рабочая ветка: `diplom-yandexcloud`. Отчёт относится только к дипломному проекту и не изменяет оглавление домашних работ в ветке `main`.*
