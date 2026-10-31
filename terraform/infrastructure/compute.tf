@@ -1,8 +1,4 @@
 
-data "yandex_compute_image" "ubuntu" {
-  family    = "ubuntu-2204-lts"
-  folder_id = "standard-images"
-}
 
 locals {
   k8s_nodes = {
@@ -47,7 +43,7 @@ resource "yandex_compute_instance" "k8s" {
 
   boot_disk {
     initialize_params {
-      image_id = data.yandex_compute_image.ubuntu.id
+      image_id = "fd8li2uhmp8b7gks0op1"
       size     = each.value.disk_size
       type     = "network-ssd"
     }
