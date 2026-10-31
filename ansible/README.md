@@ -113,3 +113,69 @@ sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf get pods -n kube-system -o 
 При пересоздании облачных ресурсов с другими внутренними IP необходимо обновить `hosts.yaml` и `ssh_config.example` (или рабочий `~/.ssh/config`).
 
 Этот README описывает развёртывание Kubernetes. Виртуальные машины, сети и правила безопасности Yandex Cloud создаются отдельно с помощью Terraform.
+
+## Удалённое управление Kubernetes
+
+Для администрирования кластера используется отдельная управляющая виртуальная машина `diplom-ansible` под управлением Ubuntu 22.04 LTS. Доступ к Kubernetes API осуществляется через SSH-туннель до `k8s-control-1`, без публикации API в интернете.
+
+### Установка kubectl
+
+На управляющей машине установлен `kubectl` версии `v1.33.7`, соответствующей версии кластера:
+
+```bash
+curl -fL --retry 3 \
+  -o /tmp/kubectl \
+  https://dl.k8s.io/release/v1.33.7/bin/linux/amd64/kubectl
+sudo install -o root -g root -m 0755 /tmp/kubectl /usr/local/bin/kubectl
+kubectl version --client
+```
+
+### Получение kubeconfig
+
+Файл `/etc/kubernetes/admin.conf` с control-plane скопирован на управляющую машину с помощью Ansible:
+
+```bash
+mkdir -p ~/.kube
+chmod 700 ~/.kube
+
+ansible -i inventory/diplom/hosts.yaml k8s-control-1 \
+  -b -m fetch \
+  -a 'src=/etc/kubernetes/admin.conf dest=/home/vagrant/.kube/config flat=yes'
+
+chmod 600 ~/.kube/config
+```
+
+В полученном kubeconfig адрес Kubernetes API — `https://127.0.0.1:6443`. Он доступен на управляющей машине только при работающем SSH-туннеле. **Kubeconfig содержит административные учётные данные и не должен попадать в Git.**
+
+### SSH-туннель к Kubernetes API
+
+Скрипт [`scripts/k8s-tunnel.sh`](scripts/k8s-tunnel.sh) создаёт локальное перенаправление порта `127.0.0.1:6443` управляющей машины на `127.0.0.1:6443` узла `k8s-control-1`.
+
+Для запуска скрипта требуется настроенный SSH-доступ по имени `k8s-control-1` (см. [`ssh_config.example`](ssh_config.example)).
+
+На управляющей машине:
+
+```bash
+mkdir -p ~/bin
+cp scripts/k8s-tunnel.sh ~/bin/k8s-tunnel.sh
+chmod 700 ~/bin/k8s-tunnel.sh
+~/bin/k8s-tunnel.sh
+```
+
+Команда `cp` предполагает, что репозиторий с этим файлом доступен на управляющей машине. В текущей учебной среде скрипт уже создан по пути `/home/vagrant/bin/k8s-tunnel.sh`; повторное копирование не требуется.
+
+Туннель занимает терминал и работает, пока выполняется скрипт. Для команд `kubectl` следует открыть вторую SSH-сессию к `diplom-ansible`.
+
+### Проверка доступа к кластеру
+
+Во второй сессии:
+
+```bash
+ss -lntp | grep ':6443'
+kubectl get nodes -o wide
+kubectl get pods -n kube-system -o wide
+```
+
+При проверке все три узла (`k8s-control-1`, `k8s-worker-1`, `k8s-worker-2`) находились в состоянии `Ready`, версия Kubernetes — `v1.33.7`.
+
+При остановке SSH-туннеля `kubectl` на управляющей машине теряет доступ к Kubernetes API. Чтобы восстановить подключение, достаточно снова запустить `~/bin/k8s-tunnel.sh`.
