@@ -1,0 +1,4 @@
+# Kubespray v2.29.1
+# Custom setting in inventory/diplom/group_vars/k8s_cluster/k8s-cluster.yml
+# Allow Prometheus to scrape kube-proxy metrics.
+kube_proxy_metrics_bind_address: "0.0.0.0:10249"
