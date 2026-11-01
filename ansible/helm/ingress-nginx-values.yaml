@@ -1,0 +1,20 @@
+controller:
+  admissionWebhooks:
+    patch:
+      image:
+        digest: ""
+  image:
+    digest: ""
+  ingressClass: nginx
+  ingressClassResource:
+    default: false
+    enabled: true
+    name: nginx
+  metrics:
+    enabled: true
+  replicaCount: 2
+  service:
+    nodePorts:
+      http: 30080
+      https: 30443
+    type: NodePort
