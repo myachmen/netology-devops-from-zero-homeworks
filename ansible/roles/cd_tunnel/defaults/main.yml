@@ -1,0 +1,4 @@
+---
+# Explicit approval to stage review files only; never activates SSH access.
+cd_tunnel_stage_review_approved: false
+cd_tunnel_public_key: ''

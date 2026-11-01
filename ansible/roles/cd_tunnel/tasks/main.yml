@@ -1,0 +1,99 @@
+---
+- name: Require explicit permission to stage review files
+  ansible.builtin.assert:
+    that:
+      - cd_tunnel_stage_review_approved | bool
+    fail_msg: This role is a review-only project; staging requires explicit approval.
+
+- name: Prepare a review bundle only with explicit approval
+  become: true
+  when:
+    - cd_tunnel_stage_review_approved | bool
+    - not ansible_check_mode
+  block:
+    - name: Create root-owned review directory outside sshd includes
+      ansible.builtin.file:
+        path: /var/lib/cd-tunnel-review
+        state: directory
+        owner: root
+        group: root
+        mode: '0700'
+
+    - name: Invalidate readiness before validating any new input
+      ansible.builtin.file:
+        path: /var/lib/cd-tunnel-review/READY.json
+        state: absent
+
+    - name: Validate a single public key without authorized_keys options
+      ansible.builtin.assert:
+        that:
+          - cd_tunnel_public_key is string
+          - cd_tunnel_public_key | length > 0
+          - >-
+              cd_tunnel_public_key is
+              match('^(ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/]+={0,2}( [^\r\n]+)?$')
+          - "'\\n' not in cd_tunnel_public_key"
+          - "'\\r' not in cd_tunnel_public_key"
+        fail_msg: Supply one valid public key explicitly; private keys and key options are forbidden.
+      no_log: true
+
+    - name: Stage public key temporarily for structural validation
+      ansible.builtin.copy:
+        content: "{{ cd_tunnel_public_key }}\n"
+        dest: /var/lib/cd-tunnel-review/public-key.check
+        owner: root
+        group: root
+        mode: '0600'
+      no_log: true
+
+    - name: Parse public key with OpenSSH without generating keys
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/ssh-keygen
+          - -l
+          - -f
+          - /var/lib/cd-tunnel-review/public-key.check
+      changed_when: false
+      no_log: true
+
+    - name: Stage restricted root-owned authorized_keys candidate
+      ansible.builtin.template:
+        src: authorized_keys.j2
+        dest: /var/lib/cd-tunnel-review/authorized_keys
+        owner: root
+        group: root
+        mode: '0600'
+      no_log: true
+
+    - name: Stage Match block outside active sshd configuration
+      ansible.builtin.template:
+        src: sshd-match.conf.j2
+        dest: /var/lib/cd-tunnel-review/sshd-match.conf
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: Hash both candidate files before publishing readiness
+      ansible.builtin.stat:
+        path: "/var/lib/cd-tunnel-review/{{ item }}"
+        checksum_algorithm: sha256
+      loop:
+        - authorized_keys
+        - sshd-match.conf
+      register: cd_tunnel_review_hashes
+      no_log: true
+
+    - name: Publish readiness only for the complete validated bundle
+      ansible.builtin.copy:
+        content: "{{ cd_tunnel_review_hashes.results | map(attribute='stat.checksum') | list | to_json }}\n"
+        dest: /var/lib/cd-tunnel-review/READY.json
+        owner: root
+        group: root
+        mode: '0600'
+      no_log: true
+  always:
+    - name: Remove temporary public-key validation file
+      ansible.builtin.file:
+        path: /var/lib/cd-tunnel-review/public-key.check
+        state: absent
+      no_log: true

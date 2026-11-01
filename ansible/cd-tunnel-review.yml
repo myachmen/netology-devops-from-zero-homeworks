@@ -1,0 +1,6 @@
+---
+- name: Stage CD tunnel candidates for review only
+  hosts: kube_control_plane
+  gather_facts: false
+  roles:
+    - role: cd_tunnel

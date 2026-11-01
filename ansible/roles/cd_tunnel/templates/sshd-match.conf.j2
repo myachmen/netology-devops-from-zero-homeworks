@@ -1,0 +1,17 @@
+# Candidate only: NOT installed under /etc/ssh and NOT included automatically.
+Match User cd-tunnel
+    AuthorizedKeysFile /etc/ssh/authorized_keys/cd-tunnel
+    AuthenticationMethods publickey
+    PubkeyAuthentication yes
+    PasswordAuthentication no
+    KbdInteractiveAuthentication no
+    AllowTcpForwarding local
+    PermitOpen 127.0.0.1:6443
+    AllowStreamLocalForwarding no
+    PermitTunnel no
+    PermitTTY no
+    X11Forwarding no
+    AllowAgentForwarding no
+    PermitUserRC no
+    MaxSessions 0
+Match all
