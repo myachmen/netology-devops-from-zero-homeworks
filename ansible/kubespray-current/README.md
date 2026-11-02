@@ -54,7 +54,8 @@ ansible-inventory --graph
 
 Приватный `.local/nodes.json` не появится после clone: перед использованием
 его нужно отдельно подготовить по свежим metadata и проверить все host keys.
-Отсутствие файла приводит к отказу reader, а не к fallback на historical inventory.
+Отсутствие файла приводит к отказу reader. В config разрешён только script
+plugin, unparsed_is_failed=True: нет fallback на другие форматы/исторические файлы.
 Group_vars, metrics exposure, runtime preparation и реальный become требуют
 отдельного согласования. Содержимое старого ignored inventory/group_vars
 не копировалось. Текущие статические проверки не доказывают readiness deployment.
