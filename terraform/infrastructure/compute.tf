@@ -36,6 +36,13 @@ resource "yandex_compute_instance" "k8s" {
   zone        = each.value.zone
   platform_id = "standard-v3"
 
+  dynamic "scheduling_policy" {
+    for_each = each.key == "k8s-worker-2" ? [true] : []
+    content {
+      preemptible = true
+    }
+  }
+
   resources {
     cores  = each.value.cores
     memory = each.value.memory
