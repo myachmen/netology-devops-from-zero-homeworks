@@ -1,0 +1,13 @@
+Host *
+    StrictHostKeyChecking yes
+    BatchMode yes
+    IdentitiesOnly yes
+    ForwardAgent no
+    UpdateHostKeys no
+    ConnectionAttempts 1
+    ConnectTimeout 10
+    NumberOfPasswordPrompts 0
+    PasswordAuthentication no
+    KbdInteractiveAuthentication no
+    ControlMaster no
+    ControlPersist no
