@@ -1,0 +1,23 @@
+---
+# Minimal profile for the protected three-node inventory; upstream v2.29.1 pinned.
+kube_version: "1.33.7"
+container_manager: containerd
+containerd_version: "2.1.5"
+containerd_use_systemd_cgroup: true
+kubelet_cgroup_driver: systemd
+kube_network_plugin: calico
+calico_network_backend: vxlan
+calico_vxlan_mode: Always
+calico_ipip_mode: Never
+kube_proxy_mode: ipvs
+dns_mode: coredns
+enable_nodelocaldns: true
+kubelet_fail_swap_on: true
+etcd_deployment_type: host
+# Existing Helm release owns ingress; never install a second controller here.
+ingress_nginx_enabled: false
+# No sensitive local artifacts automatically fetched.
+kubeconfig_localhost: false
+kubectl_localhost: false
+# Service/Pod networks and private API/local proxy retain pinned upstream defaults.
+# Addressing and the single control-plane/etcd membership come from inventory.

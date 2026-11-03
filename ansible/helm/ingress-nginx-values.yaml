@@ -2,9 +2,9 @@ controller:
   admissionWebhooks:
     patch:
       image:
-        digest: ""
+        digest: ''
   image:
-    digest: ""
+    digest: ''
   ingressClass: nginx
   ingressClassResource:
     default: false
@@ -18,3 +18,21 @@ controller:
       http: 30080
       https: 30443
     type: NodePort
+    externalTrafficPolicy: Cluster
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+            - k8s-worker-1
+            - k8s-worker-2
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: ingress-nginx
+            app.kubernetes.io/component: controller
+        topologyKey: kubernetes.io/hostname
