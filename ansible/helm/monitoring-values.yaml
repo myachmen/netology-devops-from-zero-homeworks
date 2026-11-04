@@ -19,6 +19,22 @@ grafana:
     requests:
       cpu: 100m
       memory: 128Mi
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: web
+      traefik.ingress.kubernetes.io/router.priority: '10'
+    labels:
+      diploma-ingress: enabled
+    hosts:
+    - grafana.diploma.local
+    path: /
+    pathType: Prefix
+    tls: []
+  grafana.ini:
+    auth.anonymous:
+      enabled: false
 kube-state-metrics:
   resources:
     limits:
@@ -39,7 +55,7 @@ prometheus:
     retention: 7d
     storageSpec:
       emptyDir:
-        medium: ""
+        medium: ''
         sizeLimit: 5Gi
 prometheusOperator:
   resources:
