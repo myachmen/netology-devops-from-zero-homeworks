@@ -1,0 +1,89 @@
+# Prepared only; see traefik-migration.md. Chart 42.3.0 / Proxy v3.7.17.
+image:
+  registry: docker.io
+  repository: traefik
+  tag: v3.7.17
+deployment:
+  kind: Deployment
+  replicas: 2
+  podLabels:
+    diploma-ingress-controller: traefik
+# Both replicas must run on different workers; never tolerate control-plane taints.
+nodeSelector:
+  kubernetes.io/os: linux
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values: [k8s-worker-1, k8s-worker-2]
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            diploma-ingress-controller: traefik
+        topologyKey: kubernetes.io/hostname
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
+tolerations: []
+hostNetwork: false
+service:
+  spec:
+    type: NodePort
+    externalTrafficPolicy: Cluster
+ports:
+  web:
+    asDefault: true
+    port: 8000
+    exposedPort: 80
+    nodePort: 30080
+    expose:
+      default: true
+  websecure:
+    expose:
+      default: false
+  traefik:
+    expose:
+      default: false
+ingressClass:
+  enabled: true
+  name: traefik
+  isDefaultClass: false
+providers:
+  kubernetesCRD:
+    enabled: false
+  kubernetesGateway:
+    enabled: false
+  kubernetesIngressNGINX:
+    enabled: false
+  kubernetesIngress:
+    enabled: true
+    ingressClass: traefik
+    labelSelector: diploma-ingress=enabled
+    allowExternalNameServices: false
+    strictPrefixMatching: true
+    publishedService:
+      enabled: false
+api:
+  dashboard: false
+ingressRoute:
+  dashboard:
+    enabled: false
+  healthcheck:
+    enabled: false
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+  readOnlyRootFilesystem: true
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault

@@ -1,3 +1,5 @@
+# SUPERSEDED: retired community ingress-nginx; NOT FOR DEPLOYMENT.
+# Use the separately approved Traefik profile; see traefik-migration.md.
 controller:
   admissionWebhooks:
     patch:

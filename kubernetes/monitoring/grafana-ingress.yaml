@@ -1,10 +1,16 @@
-﻿apiVersion: networking.k8s.io/v1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: grafana
   namespace: monitoring
+  # Disabled by the Traefik provider label selector until access is approved.
+  labels:
+    diploma-ingress: disabled
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.priority: "10"
 spec:
-  ingressClassName: nginx
+  ingressClassName: traefik
   rules:
     - host: grafana.diploma.local
       http:
