@@ -65,3 +65,6 @@ prometheusOperator:
     requests:
       cpu: 100m
       memory: 128Mi
+kubeEtcd:
+  endpoints:
+  - 10.10.1.13

@@ -21,3 +21,7 @@ kubeconfig_localhost: false
 kubectl_localhost: false
 # Service/Pod networks and private API/local proxy retain pinned upstream defaults.
 # Addressing and the single control-plane/etcd membership come from inventory.
+
+# Metrics use the existing private cluster security boundary.
+kube_proxy_metrics_bind_address: "0.0.0.0:10249"
+etcd_listen_metrics_urls: "http://{{ etcd_address }}:2381"
