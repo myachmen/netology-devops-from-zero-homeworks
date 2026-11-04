@@ -3,6 +3,7 @@ kind: ServiceAccount
 metadata:
   name: github-actions-deployer
   namespace: default
+automountServiceAccountToken: false
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -13,16 +14,7 @@ rules:
   - apiGroups: ["apps"]
     resources: ["deployments"]
     resourceNames: ["diploma-app"]
-    verbs: ["get", "patch", "update"]
-  - apiGroups: ["apps"]
-    resources: ["deployments"]
-    verbs: ["list", "watch"]
-  - apiGroups: ["apps"]
-    resources: ["replicasets"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: [""]
-    resources: ["pods"]
-    verbs: ["get", "list", "watch"]
+    verbs: ["get", "patch", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
