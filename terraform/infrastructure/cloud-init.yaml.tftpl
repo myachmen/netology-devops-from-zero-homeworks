@@ -1,0 +1,13 @@
+#cloud-config
+users:
+  - name: ubuntu
+    gecos: Kubernetes Administrator
+    groups: [sudo]
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+
+ssh_pwauth: false
+disable_root: true
