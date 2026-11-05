@@ -146,8 +146,9 @@ trusted workflow от его изменения, не заменяет review, s
 2. Утвердить точный набор Secrets/Variables, existing identity, scoped rights,
    public-key contract, CLI/backend/schema и очередь. Настройка — отдельное разрешение.
 3. Отдельно разрешить один контролируемый **plan-only** run с fresh identity/backend/
-   state gate и lock writes. Текущий runner включает apply, поэтому для plan-only
-   нужен reviewed отдельный режим/черновик; не запускать его «для проверки».
+   state gate и lock writes. Runner `run_infrastructure.py` включает apply и не
+   подходит для такой проверки. В подготовке №159 добавлен отдельный
+   `run_plan_only.py` и отключённый manual template (см. дополнение ниже).
 4. Review sanitized plan summary и private plan допустимым защищённым способом.
    Затем отдельное прямое разрешение **первого apply** на exact candidate SHA/ожидание.
 5. Отдельно активировать template/jobs/marker и согласованный main commit.
@@ -187,3 +188,116 @@ Terraform CLI, GitHub workflows, SSH или cloud probes.** Fixtures синте�
 - https://yandex.cloud/en/docs/vpc/security/
 - https://yandex.cloud/en/docs/application-load-balancer/security/
 - https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency
+
+## Дополнение №159 — отдельный plan-only режим, НЕ АКТИВИРОВАН
+
+После №158 main содержит reviewed 17 файлов на
+`2c0234cb2fd1df75acbca36f8e6a4d716ef3bbe1`. Подготовка №159 выполняется в новой
+`feature/diploma-terraform-plan-only` от этого SHA; сама публикация feature не
+разрешает merge, Terraform, Actions dispatch, Secrets/Variables или IAM writes.
+
+Новые файлы: `ci/terraform/run_plan_only.py`,
+`ci/terraform/terraform-plan-only.yml.inert`, `tests/test_terraform_plan_only.py`.
+Старые auto-apply runner/template/policy остаются без изменений и не используются
+новым entry point. Общая только существующая strict no-op plan policy.
+
+### Исполняемый путь будущего запуска
+
+После отдельного разрешения: trusted manual dispatch на main с exact
+`approved_sha` → проверка owner marker/repo/ref/event/attempt1/SHA → backend и lock
+fingerprints → approved input/key schema → fresh GitHub main SHA → CLI1.15.7 →
+init → validate → refresh=true locked plan → private show JSON → strict policy →
+повторная проверка main SHA → только `PLAN_ONLY_VERIFIED_NOOP` и число ресурсов.
+
+Command allowlist исчерпывающий: **version/init/validate/plan/show**. Нет импорта
+apply runner, ветки применения, произвольных CLI arguments, state/import/destroy/
+force-unlock команд. Exit1/error/timeout/новый diff/schema mismatch → STOP без
+retry/repair/rollback. Exit2 допустим для получения JSON, но успех первого режима
+требует exit0 и полного PASS policy. Пустой state/другой состав не принимается.
+Реальная JSON schema пока UNKNOWN; синтетические tests не заменяют первый plan.
+
+Template вне workflow directory; единственный job `if: false`, marker
+`OWNER_APPROVAL_REQUIRED`. Он предусматривает только workflow_dispatch, без push,
+PR/fork/pull_request_target/tag/release. GITHUB_TOKEN только contents:read.
+Runner дополнительно запрещает attempt>1: rerun workflow не является допустимым
+повтором. Для нового запуска после сбоя потребуется отдельное решение владельца.
+
+### Backend writes — явная граница будущего разрешения
+
+Plan не означает zero-write: S3 lock создаётся/удаляется штатным backend. Сохраняются
+use_lockfile=true, lock=true, refresh=true и bounded lock-timeout60s; locking не
+выключать ради обхода ошибки. Не мигрировать/reconfigure/upgrade backend или lock.
+Default workspace и backend/lock bytes зафиксированы; unreviewed tfvars/local
+state/.terraform до init отклоняются. Hosted runner должен быть чистым и одноразовым.
+
+Future authorization должна явно покрывать init/local metadata/provider download,
+read/refresh существующих ресурсов и **S3 lock Put/Delete**, при сохранении запрета
+на lifecycle cloud writes/apply. После timeout состояние lock может быть UNKNOWN:
+не выполнять force-unlock/повторный dispatch автоматически. Сам №159 не обращается
+к backend. Fingerprint HCL не доказывает live lineage/serial/actual provider identity.
+
+### Практический checklist владельца: до отдельного разрешённого запуска
+
+1. Подтвердить approved existing Terraform SA и authorized key по доверенным
+   metadata в консоли/защищённом хранилище, а не по наличию app Secret. Проверить
+   действительность ключа и чтение требуемых Compute/VPC/ALB ресурсов. Для plan
+   не требуется выдавать lifecycle/IAM admin возможности. Ролевой минимум и actual
+   bindings пока UNKNOWN; не создавать новые IAM credentials/grants без разрешения.
+2. Независимо подтвердить approved existing **S3 static pair**, её principal и
+   нужный bucket/prefix. Backend contract: List prefix, Get/Put state,
+   Get/Put/Delete lock; Delete самого state не требуется. Проверить mapping на
+   Yandex permissions/conditional locking. Это отдельная identity/credential plane,
+   authorized JSON provider key не заменяет S3 access/secret pair.
+3. В **myachmen/netology-devops-from-zero-homeworks → Settings → Secrets and
+   variables → Actions** после будущего разрешения создать/обновить только:
+
+   | Тип | Имя | Откуда получить approved value (не публиковать) |
+   |---|---|---|
+   | Repository Secret | TF_YC_SERVICE_ACCOUNT_KEY_JSON | Существующий approved SA authorized JSON целиком |
+   | Repository Secret | TF_S3_ACCESS_KEY_ID | Approved existing static S3 access key |
+   | Repository Secret | TF_S3_SECRET_ACCESS_KEY | Соответствующий S3 secret key |
+   | Repository Variable | TF_CLOUD_ID | Approved provider cloud input |
+   | Repository Variable | TF_FOLDER_ID | Approved provider folder input |
+   | Repository Variable | TF_ADMIN_CIDR | Точный approved IPv4 CIDR baseline, без расширения |
+   | Repository Variable | TF_SSH_PUBLIC_KEY | Та же существующая однострочная ED25519 public key запись |
+
+   Не передавать values в чат, issue, commit, terminal logs или screenshots.
+   Подтвердить только имена/наличие и факт соответствия approved principals.
+   Не менять YC_SA_KEY_JSON приложения, не использовать private SSH key или kube token.
+4. Подтвердить review/write trust main, фактические protections и доступ к Secrets.
+   В №159 API rulesets вернул пустой список, classic branch protection дал403:
+   это **не доказательство отсутствия всех protections**. Secrets/Variables/
+   Environment configuration через доступный connector не подтверждена — UNKNOWN.
+   Владелец проверяет UI без публикации значений; не обходить ограничения API.
+5. Утвердить exact code/workflow SHA и backend/default/inputs/baseline evidence,
+   минимальные права, отсутствие других writers, окно25мин, STOP/no-retry policy.
+   Для первого plan заморозить main/другие Terraform writers; concurrency group
+   тот же, что у будущего infrastructure workflow. Сам concurrency S3 lock не заменяет.
+
+### Активация и первый plan — только в следующем отдельно согласованном scope
+
+- Review и интеграция feature не активируют шаблон. Отдельно согласовать копирование
+  **только plan-only** template в `.github/workflows/terraform-plan-only.yml`,
+  снятие единственного false gate и marker `OWNER_APPROVED_PLAN_ONLY`.
+- Старый automatic infrastructure template остаётся inert/false; его не копировать
+  и не менять. Setup Actions/CLI/provider pins не обновлять автоматически.
+- После проверки configured inputs и свежего main SHA отдельно разрешить **один**
+  manual dispatch на main с `approved_sha`, равным точному approved current main.
+  При изменении main STOP/review вместо запуска старого SHA. В №159 не dispatch.
+- Успех: actual init/validate/plan exit0, policy PASS, exact main unchanged,
+  фиксированный sanitized result, отсутствие raw outputs/artifacts/новых resources.
+  Сохранить только run URL/SHA/санитизированные статусы. Это ещё не main-auto-apply
+  критерий Нетологии: apply и последующая automation требуют отдельных разрешений.
+
+Временный каталог0700, файлы0600; provider JSON и S3 values не передаются через CLI.
+Дочерний Terraform получает только явный environment, без GITHUB_TOKEN/raw JSON/
+произвольных ambient overrides. Логи stdout/stderr и show JSON раздельно private;
+cleanup удаляет собственные temporary files, в том числе при отказе policy.
+Ошибки выводят только allowlisted category/stage и integer returncode; exception
+messages, state/IDs/plan/ключи не печатаются. После прерывания runner cleanup может
+быть неполным: одноразовый hosted runner и отсутствие artifacts обязательны.
+
+Offline suite использует только synthetic fixtures и mocks subprocess/network;
+реальный Terraform/cloud не вызывается. Следующий безопасный шаг — owner review
+кода и отдельное согласование configured inputs + одного plan-only запуска с lock
+writes, **не самостоятельная активация**.
