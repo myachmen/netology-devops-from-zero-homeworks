@@ -130,7 +130,8 @@ Run offline only: `python3 -B -m unittest discover -s tests -p 'test_terraform_*
 and existing actionlint against the inert candidate. These tests mock every
 Terraform process, S3 HEAD and GitHub API interaction. No Terraform executable or
 cloud credentials are needed. PyYAML is a test dependency; existing local package
-is reused in task179. Future runner installs a pinned test package before tests.
+is reused in task179. Future runner installs pinned test/SDK packages only in
+separate disposable venvs under RUNNER_TEMP, without global pip/system changes.
 
 Review branch diff against diplom-yandexcloud; infrastructure HCL/lock must be
 unchanged. A feature publication/PR contains only inert templates, scripts,

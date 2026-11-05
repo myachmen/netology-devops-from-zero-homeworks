@@ -23,8 +23,9 @@ jobs:
         # Installation happens on a FUTURE explicitly activated runner.
         # No dependencies are installed locally in task179.
         run: |
-          python3 -m pip install --disable-pip-version-check PyYAML==6.0.2
-          python3 -B -m unittest discover -s tests -p 'test_terraform_*.py' -v
+          python3 -m venv "$RUNNER_TEMP/tf-tests"
+          "$RUNNER_TEMP/tf-tests/bin/python" -m pip install --disable-pip-version-check PyYAML==6.0.2
+          "$RUNNER_TEMP/tf-tests/bin/python" -B -m unittest discover -s tests -p 'test_terraform_*.py' -v
   plan:
     needs: offline
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.TF_AUTOMATION_MODE == 'plan' && github.run_attempt == 1 }}
@@ -41,7 +42,9 @@ jobs:
           terraform_version: 1.15.7
           terraform_wrapper: false
       - name: Install pinned S3 SDK on future runner
-        run: python3 -m pip install --disable-pip-version-check boto3==1.43.124 botocore==1.43.124
+        run: |
+          python3 -m venv "$RUNNER_TEMP/tf-sdk"
+          "$RUNNER_TEMP/tf-sdk/bin/python" -m pip install --disable-pip-version-check boto3==1.43.124 botocore==1.43.124
       - name: Plan and redacted change summary
         env:
           TF_AUTOMATION_MODE: plan
@@ -53,7 +56,7 @@ jobs:
           TF_VAR_admin_cidr: ${{ vars.TF_ADMIN_CIDR }}
           TF_SSH_PUBLIC_KEY: ${{ vars.TF_SSH_PUBLIC_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
-        run: python3 -B ci/terraform/run_automation.py plan >> "$GITHUB_STEP_SUMMARY"
+        run: '"$RUNNER_TEMP/tf-sdk/bin/python" -B ci/terraform/run_automation.py plan >> "$GITHUB_STEP_SUMMARY"'
   apply:
     needs: offline
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.TF_AUTOMATION_MODE == 'apply' && github.run_attempt == 1 }}
@@ -70,7 +73,9 @@ jobs:
           terraform_version: 1.15.7
           terraform_wrapper: false
       - name: Install pinned S3 SDK on future runner
-        run: python3 -m pip install --disable-pip-version-check boto3==1.43.124 botocore==1.43.124
+        run: |
+          python3 -m venv "$RUNNER_TEMP/tf-sdk"
+          "$RUNNER_TEMP/tf-sdk/bin/python" -m pip install --disable-pip-version-check boto3==1.43.124 botocore==1.43.124
       - name: Fresh plan and exact approved saved-plan apply
         env:
           TF_AUTOMATION_MODE: apply
@@ -84,4 +89,4 @@ jobs:
           TF_VAR_admin_cidr: ${{ vars.TF_ADMIN_CIDR }}
           TF_SSH_PUBLIC_KEY: ${{ vars.TF_SSH_PUBLIC_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
-        run: python3 -B ci/terraform/run_automation.py apply >> "$GITHUB_STEP_SUMMARY"
+        run: '"$RUNNER_TEMP/tf-sdk/bin/python" -B ci/terraform/run_automation.py apply >> "$GITHUB_STEP_SUMMARY"'
