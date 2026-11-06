@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Owner-gated main-push automation. Task179 prepares code; no live run authorized."""
+"""Owner-gated main-push automation. Single-owner merge gate; task184 prepares a PR, not live authorization."""
 import hashlib
 import json
 import os
@@ -7,14 +7,18 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 import run_plan_only as common
-from automation_policy import ReviewError, review, allow_apply
+from automation_policy import ReviewError, review
+import state_only_policy as state_policy
 
 REPO = common.REPOSITORY
 MANIFEST = {".terraform.lock.hcl", "alb.tf", "backend.tf", "cloud-init.yaml.tftpl", "compute.tf", "network.tf", "outputs.tf", "providers.tf", "security.tf", "variables.tf", "versions.tf"}
 INPUTS = {"TF_YC_SERVICE_ACCOUNT_KEY_JSON", "TF_S3_ACCESS_KEY_ID", "TF_S3_SECRET_ACCESS_KEY", "TF_VAR_cloud_id", "TF_VAR_folder_id", "TF_VAR_admin_cidr", "TF_SSH_PUBLIC_KEY"}
-CONTROL = {"TF_AUTOMATION_MODE", "TF_APPROVED_APPLY_SHA", "TF_APPROVED_CHANGE_SHA256"}
+CONTROL = {"TF_AUTOMATION_MODE", "TF_APPLY_AUTHORIZATION"}
+APPLY_AUTHORIZATION = "OWNER_MERGED_STATE_ONLY_V1"
+MAX_PLAN_AGE = 900
 
 
 class Stop(Exception):
@@ -36,8 +40,29 @@ def gate(env, mode):
     import ipaddress
     need(ipaddress.ip_network(env["TF_VAR_admin_cidr"], strict=True).version == 4, "INPUT_FORMAT")
     if mode == "apply":
-        need(env.get("TF_APPROVED_APPLY_SHA") == env["GITHUB_SHA"], "APPLY_SHA")
-        need(bool(re.fullmatch("[0-9a-f]{64}", env.get("TF_APPROVED_CHANGE_SHA256", ""))), "APPLY_DIGEST")
+        need(env.get("TF_APPLY_AUTHORIZATION") == APPLY_AUTHORIZATION, "APPLY_AUTHORIZATION")
+
+
+def load_manifest(repo):
+    path = repo / "ci/terraform/apply-policy.json"
+    need(path.is_file() and not path.is_symlink(), "POLICY_FILE")
+    value = common.load_private_json(path)
+    state_policy.manifest_gate(value)
+    return value
+
+
+def saved_checksum(path):
+    need(path.is_file() and not path.is_symlink(), "PLAN_FILE")
+    need(path.stat().st_mode & 0o777 == 0o600, "PLAN_PERMISSIONS")
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def binding_gate(binding, saved, policy, manifest, source_sha, now):
+    need(0 <= now - binding["started"] <= MAX_PLAN_AGE, "PLAN_TTL")
+    need(binding["source_sha"] == source_sha, "PLAN_SOURCE")
+    need(binding["binary"] == saved_checksum(saved), "PLAN_FILE_CHANGED")
+    need(binding["policy"] == state_policy.manifest_gate(manifest), "POLICY_CHANGED")
+    need(binding["review"] == policy, "POLICY_BINDING")
 
 
 def source_gate(root):
@@ -50,6 +75,8 @@ def source_gate(root):
 def verify_checkout(repo, env):
     value = subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"], timeout=10, text=True).strip()
     need(value == env["GITHUB_SHA"], "CHECKOUT_SHA")
+    dirty = subprocess.check_output(["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=all"], timeout=10, text=True)
+    need(not dirty, "CHECKOUT_DIRTY")
 
 
 def command(stage, plan):
@@ -98,6 +125,8 @@ def execute(env, mode, repository=None, head=None, progress=None):
     root = repo / "terraform/infrastructure"
     verify_checkout(repo, env)
     source_gate(root)
+    manifest = load_manifest(repo) if mode == "apply" else None
+    policy_digest = state_policy.manifest_gate(manifest) if manifest is not None else None
     key = common.provider_key(env["TF_YC_SERVICE_ACCOUNT_KEY_JSON"])
     pub = common.public_key(env["TF_SSH_PUBLIC_KEY"])
     trusted = dict(env, TF_PLAN_APPROVED_SHA=env["GITHUB_SHA"])
@@ -130,7 +159,10 @@ def execute(env, mode, repository=None, head=None, progress=None):
                     touched_backend = True
                     run(stage, root, child, private, status["commands"])
                 status["stage"] = "plan"
+                plan_started = time.monotonic()
                 exitcode = run("plan", root, child, private, status["commands"])
+                saved = private / "private.tfplan"
+                binary_digest = saved_checksum(saved)
                 status["stage"] = "show"
                 run("show", root, child, private, status["commands"])
                 plan = common.load_private_json(private / "show.out")
@@ -140,15 +172,32 @@ def execute(env, mode, repository=None, head=None, progress=None):
                 status["status"] = "PLAN_NOOP" if exitcode == 0 else "PLAN_CHANGES_DETECTED"
                 if mode == "apply":
                     status["stage"] = "apply_gate"
-                    allow_apply(plan, summary, env["TF_APPROVED_CHANGE_SHA256"])
-                    saved = private / "private.tfplan"
-                    need(saved.is_file() and not saved.is_symlink(), "PLAN_FILE")
-                    digest = hashlib.sha256(saved.read_bytes()).hexdigest()
+                    approved = state_policy.approve(plan, manifest)
+                    need(approved["policy_digest"] == policy_digest, "POLICY_CHANGED")
+                    status.update({k: approved[k] for k in ("policy_version", "policy_digest", "state_changes")})
+                    binding = {"started": plan_started, "binary": binary_digest,
+                               "policy": policy_digest, "source_sha": env["GITHUB_SHA"],
+                               "review": approved}
+                    # Check absent lock before any apply, not only after it.
+                    code = head(env, "infrastructure/terraform.tfstate.tflock")
+                    status["heads"].append({"target": "pre_apply_lock", "http": code})
+                    need(code == 404, "LOCK_REQUIRES_REVIEW")
                     common.verify_main(trusted)
-                    need(hashlib.sha256(saved.read_bytes()).hexdigest() == digest, "PLAN_FILE_CHANGED")
-                    status["stage"] = "apply"
-                    run("apply", root, child, private, status["commands"])
-                    status["status"] = "SAVED_PLAN_APPLY_EXIT_0"
+                    verify_checkout(repo, env)
+                    source_gate(root)
+                    current_manifest = load_manifest(repo)
+                    current_plan = common.load_private_json(private / "show.out")
+                    current_review = state_policy.approve(current_plan, current_manifest)
+                    binding_gate(binding, saved, current_review, current_manifest,
+                                 env["GITHUB_SHA"], time.monotonic())
+                    if exitcode == 0:
+                        need(not approved["state_changes"], "EXIT_JSON_MISMATCH")
+                        status["status"] = "NO_CHANGES_APPLY_SKIPPED"
+                    else:
+                        need(approved["state_changes"], "EXIT_JSON_MISMATCH")
+                        status["stage"] = "apply"
+                        run("apply", root, child, private, status["commands"])
+                        status["status"] = "SAVED_PLAN_APPLY_EXIT_0"
                 common.verify_main(trusted)
             finally:
                 if touched_backend:

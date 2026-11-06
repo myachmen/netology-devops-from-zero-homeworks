@@ -1,3 +1,16 @@
+# Terraform automation acceptance
+
+## Task184 single-owner candidate (supersedes architecture below)
+
+The candidate in `.github/workflows/terraform-automation.yml` replaces plan with
+ONE `apply` execution job after offline checks. It remains feature/PR-only;
+main is plan-only until a separately authorized merge. PRs have no production
+credentials/execution. See [single-owner runbook](TERRAFORM_APPLY_SINGLE_OWNER.md)
+for current policy, manual settings and evidence gates. The matching `.inert`
+file is only a reference copy. Earlier variable-controlled plan/apply jobs and
+independent SHA/digest approval described below are HISTORICAL, not activation
+instructions for task184. They do not override the new state-only policy.
+
 # Terraform automation: prepared, awaiting live owner gate
 
 ## Task181 superseding plan-only configuration
