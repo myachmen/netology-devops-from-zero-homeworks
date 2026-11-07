@@ -12,6 +12,7 @@ from pathlib import Path
 import run_plan_only as common
 from automation_policy import ReviewError, review
 import state_only_policy as state_policy
+from drift_projection import project as project_drift
 
 REPO = common.REPOSITORY
 MANIFEST = {".terraform.lock.hcl", "alb.tf", "backend.tf", "cloud-init.yaml.tftpl", "compute.tf", "network.tf", "outputs.tf", "providers.tf", "security.tf", "variables.tf", "versions.tf"}
@@ -169,6 +170,8 @@ def execute(env, mode, repository=None, head=None, progress=None):
                 summary = review(plan)
                 need(exitcode != 0 or (all(x["actions"] == ["no-op"] for x in summary["resources"]) and not summary["output_change_count"]), "EXIT_JSON_MISMATCH")
                 status.update(summary)
+                # Safe evidence survives a later policy denial; never raw values.
+                status["drift_review"] = project_drift(plan)
                 status["status"] = "PLAN_NOOP" if exitcode == 0 else "PLAN_CHANGES_DETECTED"
                 if mode == "apply":
                     status["stage"] = "apply_gate"

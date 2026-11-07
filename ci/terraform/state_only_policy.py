@@ -5,6 +5,7 @@ manifests, never a copy of production state or its secret values.
 """
 import hashlib
 import json
+import re
 from automation_policy import ReviewError, require, review
 from plan_policy import EXPECTED_ADDRESSES, PROVIDER, no_unknown, resources
 
@@ -13,6 +14,41 @@ VERSION = "state-only-v1"
 PROTECTED = {"id", "name", "created_at", "folder_id", "network_id", "subnet_id",
              "network_interface", "security_group_ids", "metadata", "service_account_id",
              "listener", "http_router_id", "backend", "route", "ingress", "egress"}
+PROTECTED |= {"status", "hostname", "fqdn", "zone", "scheduling_policy", "preemptible",
+              "nat_ip_address", "ip_address", "ipv6_address", "external_ip", "internal_ip",
+              "mac_address", "dns_record", "private_key", "token", "secret", "password",
+              "credentials", "ssh_public_key", "user_data"}
+NODE_KEYS = frozenset({"k8s-control-1", "k8s-worker-1", "k8s-worker-2"})
+# Explicitly supported TypeMap locations, not a global null/empty equivalence.
+LABEL_TARGETS = frozenset({*(f'yandex_compute_instance.k8s["{node}"]' for node in NODE_KEYS),
+    "yandex_alb_backend_group.k8s_ingress", "yandex_alb_http_router.diplom",
+    "yandex_alb_load_balancer.diplom", "yandex_alb_target_group.k8s_workers"})
+
+
+def validate_path(kind, target, path):
+    """Syntax/schema context only; protected-path authorization is separate."""
+    require(kind in ("drift", "outputs") and isinstance(path, list) and len(path) <= 12, "POLICY_PATH")
+    if kind == "outputs" and target == "k8s_nodes":
+        require(len(path) == 2 and type(path[0]) is str and path[0] in NODE_KEYS
+                and path[1] in ("internal_ip", "external_ip"), "POLICY_PATH")
+        return
+    require(kind != "drift" or bool(path), "POLICY_PATH")
+    require(not path or type(path[0]) is str, "POLICY_PATH")
+    require(all((type(x) is int and 0 <= x < 10000) or
+                (type(x) is str and re.fullmatch(r"[a-z][a-z0-9_]{0,63}", x)) for x in path), "POLICY_PATH")
+    # Labels are dynamic data, not schema tokens. No nested key approvals.
+    require(not (path and path[0] == "labels") or len(path) == 1, "POLICY_PATH")
+
+
+def structural_pair(kind, target, path, before, after):
+    """Only exact null <-> empty TypeMap at one explicitly reviewed labels path.
+
+    This capability authorizes nothing without a per-address manifest entry.
+    Arrays, nonempty maps, labels inserts/deletes and other paths stay denied.
+    """
+    return (kind == "drift" and target in LABEL_TARGETS and path == ["labels"]
+            and ((before is None and type(after) is dict and not after)
+                 or (after is None and type(before) is dict and not before)))
 
 
 def canonical(value):
@@ -39,11 +75,12 @@ def manifest_gate(manifest):
             require(isinstance(rule, dict) and set(rule) == {identity, "path", "before", "after"}, "POLICY_RULE")
             target, path = rule[identity], rule["path"]
             require(isinstance(target, str) and (target in EXPECTED_ADDRESSES if kind == "drift" else target.isidentifier()), "POLICY_TARGET")
-            require(isinstance(path, list) and all(type(x) in (str, int) for x in path), "POLICY_PATH")
-            require(all((type(x) is int and x >= 0) or (type(x) is str and x.isidentifier() and x not in PROTECTED) for x in path), "POLICY_PATH")
-            require(kind != "drift" or bool(path), "POLICY_PATH")
-            # Only exact scalar substitutions; no subtree/wildcard approvals.
-            require(all(type(rule[k]) in (str, int, float, bool, type(None)) for k in ("before", "after")), "POLICY_VALUE")
+            validate_path(kind, target, path)
+            require(not any(type(x) is str and x in PROTECTED for x in path), "PROTECTED_PATH")
+            scalar = all(type(rule[k]) in (str, int, float, bool, type(None)) for k in ("before", "after"))
+            require(scalar or structural_pair(kind, target, path, rule["before"], rule["after"]), "POLICY_VALUE")
+            if path == ["labels"]:
+                require(structural_pair(kind, target, path, rule["before"], rule["after"]), "POLICY_VALUE")
             require(not same(rule["before"], rule["after"]), "POLICY_VALUE")
             key = (target, canonical(path))
             require(key not in seen, "POLICY_DUPLICATE")
@@ -51,16 +88,21 @@ def manifest_gate(manifest):
     return fingerprint(manifest)
 
 
-def differences(before, after, path=()):
+def differences(before, after, path=(), rules=()):
+    require(len(path) <= 20, "PLAN_DEPTH")
     if same(before, after):
         return []
     if isinstance(before, dict) and isinstance(after, dict):
         require(before.keys() == after.keys(), "STRUCTURAL_CHANGE")
-        return [row for key in sorted(before) for row in differences(before[key], after[key], (*path, key))]
+        return [row for key in sorted(before) for row in differences(before[key], after[key], (*path, key), rules)]
     if isinstance(before, list) and isinstance(after, list):
         require(len(before) == len(after), "STRUCTURAL_CHANGE")
-        return [row for i, (left, right) in enumerate(zip(before, after)) for row in differences(left, right, (*path, i))]
-    require(not isinstance(before, (dict, list)) and not isinstance(after, (dict, list)), "STRUCTURAL_CHANGE")
+        return [row for i, (left, right) in enumerate(zip(before, after)) for row in differences(left, right, (*path, i), rules)]
+    if isinstance(before, (dict, list)) or isinstance(after, (dict, list)):
+        # Rules have already passed manifest_gate. Exact match only; no wildcard,
+        # no subtree substitution, no recursive null->empty normalization.
+        require(sum(rule["path"] == list(path) and same(rule["before"], before)
+                    and same(rule["after"], after) for rule in rules) == 1, "STRUCTURAL_CHANGE")
     return [(list(path), before, after)]
 
 
@@ -114,14 +156,16 @@ def approve(plan, manifest):
         require(isinstance(change, dict) and change.get("actions") == ["update"], "DRIFT_ACTION")
         markers(change)
         require(same(change.get("after"), prior[address]), "DRIFT_AFTER")
-        rows = differences(change.get("before"), change.get("after"))
+        rules = [r for r in manifest["drift"] if r["address"] == address]
+        rows = differences(change.get("before"), change.get("after"), rules=rules)
         require(bool(rows), "DRIFT_EMPTY")
         match_rules("drift", address, rows, manifest, used)
     for name, change in plan.get("output_changes", {}).items():
         require(isinstance(name, str) and name.isidentifier(), "OUTPUT_SCHEMA")
         markers(change)
         require(change.get("actions") in (["no-op"], ["update"]), "OUTPUT_ACTION")
-        rows = differences(change.get("before"), change.get("after"))
+        rules = [r for r in manifest["outputs"] if r["name"] == name]
+        rows = differences(change.get("before"), change.get("after"), rules=rules)
         require((change["actions"] == ["no-op"]) == (not rows), "OUTPUT_ACTION")
         match_rules("outputs", name, rows, manifest, used)
     # Require every approved exception to match exactly; never silently reuse an

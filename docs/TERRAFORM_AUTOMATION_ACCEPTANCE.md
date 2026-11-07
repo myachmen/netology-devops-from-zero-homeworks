@@ -1,5 +1,30 @@
 # Terraform automation acceptance
 
+## Task187 supersedes the policy details in task184 below
+
+PR3 remains draft/unmerged. Main676f985 is still plan-only. No Terraform,
+cloud/VM operation, Secrets/settings change or real Apply occurred in187.
+The single-owner main-merge architecture is unchanged. Workflow YAML is unchanged.
+
+Path syntax now recognizes exact known hyphenated node keys only under
+k8s_nodes output schema. Authorization still denies IP/status/network/lifecycle
+changes, even with an exact synthetic rule. Typed structural capability is only
+explicit per-address null <-> empty labels TypeMap on seven fixed locations;
+nonempty maps, arrays, structural insert/delete and unreviewed paths stay denied.
+Production apply-policy.json is unchanged and its two allowlists are EMPTY.
+
+A pure drift_projection module records schema-vetted paths, safe container
+emptiness and typed status categories before policy denial, without raw values.
+It does not approve a plan. Its patterns use provider v0.238.0 sources and public
+outputs.tf; it cannot recover the deleted plan186 or its three masked paths.
+See [current single-owner runbook](TERRAFORM_APPLY_SINGLE_OWNER.md) for the
+supported/denied matrix, owner UI status and first-Apply evidence gates.
+
+Task186 is historical: one Plan2/Show0, no-op14/drift9/output1; raw data deleted.
+Owner UI187 says worker2 is preemptible/Stopped/no public IPv4. That is not
+independent current identity/health evidence, causal proof, or permission to
+start it. Do not merge or weaken policy to force a green run.
+
 ## Task184 single-owner candidate (supersedes architecture below)
 
 The candidate in `.github/workflows/terraform-automation.yml` replaces plan with
