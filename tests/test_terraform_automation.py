@@ -18,6 +18,7 @@ sys.path.insert(0, str(ROOT / "ci/terraform"))
 sys.path.insert(0, str(ROOT / "tests"))
 import run_automation as runner
 import automation_policy as policy
+import state_only_policy as state_policy
 from test_terraform_plan_only import approved_env as old_env
 from test_terraform_policy import fixture, CANARY
 
@@ -28,7 +29,7 @@ def env(mode="plan", digest="a" * 64):
     value.pop("TF_PLAN_APPROVED_SHA")
     value.update(GITHUB_EVENT_NAME="push", TF_AUTOMATION_MODE=mode)
     if mode == "apply":
-        value.update(TF_APPROVED_APPLY_SHA=value["GITHUB_SHA"], TF_APPROVED_CHANGE_SHA256=digest)
+        value.update(TF_APPLY_AUTHORIZATION=runner.APPLY_AUTHORIZATION)
     return value
 
 
@@ -42,12 +43,12 @@ def changed():
 
 class AutomationTests(unittest.TestCase):
     def simulate(self, mode="plan", plan=None, exitcode=0, fail=None, timeout=None,
-                 heads=None, approved=None, stale=False, bad_json=False, version="1.15.7", mutate_saved=False):
+                 heads=None, stale=False, bad_json=False, version="1.15.7", mutate_saved=False):
         plan = fixture() if plan is None else plan
         calls, temporary = [], []
         progress = {}
-        values = env(mode, approved or policy.review(plan)["change_digest"])
-        heads = iter([200, 404, 404] if heads is None else heads)
+        values = env(mode)
+        heads = iter(([200, 404, 404, 404] if mode == "apply" else [200, 404, 404]) if heads is None else heads)
         with tempfile.TemporaryDirectory() as directory:
             repo = Path(directory)
             root = repo / "terraform/infrastructure"
@@ -117,16 +118,31 @@ class AutomationTests(unittest.TestCase):
         self.assertNotIn("apply", calls)
 
     def test_approved_same_run_saved_plan_apply(self):
-        error, result, _, calls, _ = self.simulate(mode="apply", plan=changed(), exitcode=2)
+        plan = fixture()
+        plan["output_changes"] = {"synthetic": {"actions": ["update"], "before": 1, "after": 2,
+                                                 "after_unknown": False}}
+        manifest = {"version": "state-only-v1", "drift": [], "outputs": [
+            {"name": "synthetic", "path": [], "before": 1, "after": 2}]}
+        error, result, progress, calls, _ = self.simulate(mode="apply", plan=plan, exitcode=2)
         self.assertIsNone(error)
         self.assertEqual(result["status"], "SAVED_PLAN_APPLY_EXIT_0")
         self.assertEqual(calls.count("plan"), 1)
-        self.assertEqual(calls[-1], "apply")
+        self.assertEqual(calls.count("apply"), 1)
+        self.assertEqual(progress["commands"][3]["returncode"], 2)
 
-    def test_unapproved_digest_never_applies(self):
-        error, _, _, calls, _ = self.simulate(mode="apply", plan=changed(), exitcode=2, approved="b" * 64)
-        self.assertEqual(error, "CHANGE_APPROVAL")
+    def test_noop_never_fake_applies(self):
+        error, result, _, calls, _ = self.simulate(mode="apply")
+        self.assertIsNone(error)
+        self.assertEqual(result["status"], "NO_CHANGES_APPLY_SKIPPED")
         self.assertNotIn("apply", calls)
+
+    def test_output_refresh_requires_no_per_field_manifest(self):
+        plan = fixture()
+        plan["output_changes"]["synthetic"]["after"] = 2
+        plan["output_changes"]["synthetic"]["actions"] = ["update"]
+        error, _, _, calls, _ = self.simulate(mode="apply", plan=plan, exitcode=2)
+        self.assertIsNone(error)
+        self.assertEqual(calls.count("apply"), 1)
 
     def test_destruction_replacement_creation_denied(self):
         for actions in (["delete"], ["create"], ["delete", "create"], ["create", "delete"]):
@@ -172,7 +188,7 @@ class AutomationTests(unittest.TestCase):
         for key, value in (("GITHUB_EVENT_NAME", "pull_request"), ("GITHUB_REF", "refs/heads/feature"), ("GITHUB_RUN_ATTEMPT", "2"), ("GITHUB_REPOSITORY", "fork/repo"), ("TF_AUTOMATION_MODE", "disabled"), ("TF_CLI_ARGS", CANARY), ("AWS_PROFILE", CANARY), ("YC_TOKEN", CANARY)):
             values = env(); values[key] = value
             with self.assertRaises(runner.Stop): runner.gate(values, "plan")
-        values = env("apply"); values["TF_APPROVED_APPLY_SHA"] = "b" * 40
+        values = env("apply"); values["TF_APPLY_AUTHORIZATION"] = "unapproved"
         with self.assertRaises(runner.Stop): runner.gate(values, "apply")
 
     def test_backend_denial_before_init(self):
@@ -247,75 +263,47 @@ class AutomationTests(unittest.TestCase):
         self.assertEqual(args[-1], "private.tfplan")
         self.assertNotIn("-auto-approve", args)
 
-    def test_workflow_is_inert_and_main_push_guarded(self):
-        text = (ROOT / "ci/terraform/terraform-automation.yml.inert").read_text()
-        data = yaml.safe_load(text)
+    def check_activation(self, data):
+        self.assertEqual(set(data["jobs"]), {"offline", "apply"})
         events = data.get("on", data.get(True))
+        self.assertEqual(set(events), {"push", "pull_request"})
         self.assertEqual(events["push"]["branches"], ["main"])
         self.assertNotIn("paths", events["push"])
         self.assertEqual(data["permissions"], {"contents": "read"})
         self.assertFalse(data["concurrency"]["cancel-in-progress"])
-        self.assertEqual(data["jobs"]["apply"]["environment"], "terraform-production")
-        for mode in ("plan", "apply"):
-            condition = data["jobs"][mode]["if"]
-            self.assertIn("github.event_name == 'push'", condition)
-            self.assertIn("TF_AUTOMATION_MODE == '" + mode + "'", condition)
-        for forbidden in ("workflow_dispatch:", "pull_request_target:", "upload-artifact@", "secrets: inherit"):
-            self.assertNotIn(forbidden, text)
-        active = ROOT / ".github/workflows/terraform-automation.yml"
-        if active.exists():
-            self.check_plan_activation(yaml.safe_load(active.read_text()))
-
-    def check_plan_activation(self, data):
-        self.assertEqual(set(data["jobs"]), {"offline", "plan"})
-        events = data.get("on", data.get(True))
-        self.assertEqual(events["push"]["branches"], ["main"])
-        self.assertNotIn("paths", events["push"])
-        self.assertNotIn("workflow_dispatch", events)
-        self.assertEqual(data["permissions"], {"contents": "read"})
-        self.assertFalse(data["concurrency"]["cancel-in-progress"])
-        step = data["jobs"]["plan"]["steps"][-1]
-        self.assertEqual(step["env"]["TF_AUTOMATION_MODE"], "plan")
-        self.assertIn("run_automation.py plan", step["run"])
-        self.assertNotIn("run_automation.py apply", json.dumps(data))
-        condition = data["jobs"]["plan"]["if"]
-        for expected in ("github.event_name == 'push'", "github.ref == 'refs/heads/main'", "github.repository == 'myachmen/netology-devops-from-zero-homeworks'", "github.run_attempt == 1"):
-            self.assertIn(expected, condition)
-        self.assertNotIn("vars.TF_AUTOMATION_MODE", condition)
-        self.assertEqual(data["jobs"]["plan"]["environment"], "terraform-plan")
-        self.assertNotIn("terraform-production", json.dumps(data))
-        offline = json.dumps(data["jobs"]["offline"])
-        self.assertNotIn("secrets.", offline)
-        self.assertNotIn("run_automation.py", offline)
-        self.assertNotIn("setup-terraform", offline)
-        refs = set()
-        variables = set()
+        self.assertEqual(data["concurrency"]["group"], "terraform-infrastructure-s3-default")
+        job = data["jobs"]["apply"]
+        self.assertEqual(job["environment"], "terraform-apply")
+        self.assertEqual(job["needs"], "offline")
+        for text in ("github.event_name == 'push'", "github.ref == 'refs/heads/main'",
+                     "github.repository == 'myachmen/netology-devops-from-zero-homeworks'", "github.run_attempt == 1"):
+            self.assertIn(text, job["if"])
+        step = job["steps"][-1]
+        self.assertEqual(step["env"]["TF_AUTOMATION_MODE"], "apply")
+        self.assertEqual(step["env"]["TF_APPLY_AUTHORIZATION"], runner.APPLY_AUTHORIZATION)
+        self.assertIn("run_automation.py apply", step["run"])
+        self.assertNotIn("secrets.", json.dumps(data["jobs"]["offline"]))
+        self.assertNotIn("setup-terraform", json.dumps(data["jobs"]["offline"]))
+        self.assertNotIn("run_automation.py", json.dumps(data["jobs"]["offline"]))
         import re
-        for value in re.findall(r"secrets\.([A-Z0-9_]+)", json.dumps(data)):
-            refs.add(value)
-        for value in re.findall(r"vars\.([A-Z0-9_]+)", json.dumps(data)):
-            variables.add(value)
-        self.assertEqual(refs, {"TF_S3_ACCESS_KEY_ID", "TF_S3_SECRET_ACCESS_KEY", "TF_YC_SERVICE_ACCOUNT_KEY_JSON"})
-        self.assertEqual(variables, {"TF_ADMIN_CIDR", "TF_CLOUD_ID", "TF_FOLDER_ID", "TF_SSH_PUBLIC_KEY"})
+        for action in re.findall(r'uses: ([^\s]+)', (ROOT / ".github/workflows/terraform-automation.yml").read_text()):
+            self.assertRegex(action, r'^[^@]+@[a-f0-9]{40}$')
 
-    def test_plan_activation_cannot_expose_apply(self):
+    def test_one_production_job_and_reference_copy(self):
         path = ROOT / ".github/workflows/terraform-automation.yml"
-        if not path.exists():
-            self.skipTest("Activation candidate not present")
-        data = yaml.safe_load(path.read_text())
-        self.check_plan_activation(data)
-        unsafe = copy.deepcopy(data)
-        unsafe["jobs"]["apply"] = unsafe["jobs"]["plan"]
-        with self.assertRaises(AssertionError): self.check_plan_activation(unsafe)
-        unsafe = copy.deepcopy(data)
-        unsafe["jobs"]["plan"]["environment"] = "terraform-production"
-        with self.assertRaises(AssertionError): self.check_plan_activation(unsafe)
-        unsafe = copy.deepcopy(data)
-        unsafe["jobs"]["offline"]["env"] = {"BAD": "${{ secrets.TF_S3_SECRET_ACCESS_KEY }}"}
-        with self.assertRaises(AssertionError): self.check_plan_activation(unsafe)
-        unsafe = copy.deepcopy(data)
-        unsafe["jobs"]["plan"]["steps"][-1]["env"]["TF_AUTOMATION_MODE"] = "apply"
-        with self.assertRaises(AssertionError): self.check_plan_activation(unsafe)
+        text = path.read_text()
+        self.check_activation(yaml.safe_load(text))
+        self.assertEqual(list((ROOT / ".github/workflows").glob("*.yml")), [path])
+        self.assertEqual(yaml.safe_load((ROOT / "ci/terraform/terraform-automation.yml.inert").read_text()), yaml.safe_load(text))
+        for forbidden in ("workflow_dispatch:", "pull_request_target:", "upload-artifact@", "cache@", "secrets: inherit"):
+            self.assertNotIn(forbidden, text)
+        for mutation in ("duplicate", "environment", "secret", "ref"):
+            value = yaml.safe_load(text)
+            if mutation == "duplicate": value["jobs"]["plan"] = value["jobs"]["apply"]
+            if mutation == "environment": value["jobs"]["apply"]["environment"] = "terraform-plan"
+            if mutation == "secret": value["jobs"]["offline"]["env"] = {"BAD": "${{ secrets.TF_S3_SECRET_ACCESS_KEY }}"}
+            if mutation == "ref": value["jobs"]["apply"]["if"] = "true"
+            with self.assertRaises(AssertionError): self.check_activation(value)
 
 
 if __name__ == "__main__": unittest.main()

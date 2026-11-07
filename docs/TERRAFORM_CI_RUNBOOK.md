@@ -1,3 +1,7 @@
+> Historical preparation record. Current PR3 activation contract is
+> [task188 owner decision package](TERRAFORM_APPLY_SINGLE_OWNER.md); the old
+> plan-only/inert setup below is not an instruction for the current candidate.
+
 # Terraform CI/CD: подготовка №156, НЕ АКТИВИРОВАНО
 
 Протокол APH/1.1. Разрешение №156 охватывает только feature-код и offline tests.
