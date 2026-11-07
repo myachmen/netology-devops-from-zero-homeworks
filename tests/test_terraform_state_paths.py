@@ -137,7 +137,7 @@ class ProjectionTests(unittest.TestCase):
         result=projection.project(plan);text=json.dumps(result)
         for value in (CANARY,'192.0.2.1','192.0.2.2','SYNTHETIC_OLD','SSH_PRIVATE_DATA'):
             self.assertNotIn(value,text)
-        self.assertFalse(result['policy_approval'])
+        self.assertTrue(result['evidence_only'])
         return result
 
     def test_shapes_disambiguate_null_empty_and_nonempty_without_contents(self):
@@ -164,7 +164,7 @@ class ProjectionTests(unittest.TestCase):
         plan=fixture();observed(plan,WORKER,'status','running','stopped')
         row=self.project(plan)['rows'][0]
         self.assertEqual((row['before_status_category'],row['after_status_category']),('KNOWN_RUNNING','KNOWN_STOPPED'))
-        self.assertEqual(row['category'],'UNKNOWN');self.assertFalse(row['policy_approval'])
+        self.assertEqual(row['category'],'UNKNOWN');self.assertTrue(row['evidence_only'])
         observed(plan,WORKER,'status',CANARY,'SSH_PRIVATE_DATA')
         row=self.project(plan)['rows'][0]
         self.assertEqual(row['before_status_category'],'UNRECOGNIZED_WITHHELD')
@@ -194,13 +194,16 @@ class ProjectionTests(unittest.TestCase):
         self.assertEqual(result['output_change_count'],0)
         self.assertEqual(len(result['rows']),1)
 
-    def test_projection_survives_policy_denial_without_second_native_call(self):
+    def test_safe_counts_survive_policy_denial_without_second_native_call(self):
         testcase=previous.AutomationTests()
         plan,_=labels_fixture()
+        plan["resource_changes"][0]["change"]["actions"]=["update"]
         error,_,progress,calls,_=testcase.simulate(mode='apply',plan=plan,exitcode=2)
         self.assertIsNotNone(error);self.assertNotIn('apply',calls)
         self.assertEqual(calls.count('plan'),1)
-        self.assertEqual(progress['drift_review']['rows'][0]['after_shape'],'EMPTY_MAP')
+        self.assertEqual(progress['drift_count'],1)
+        self.assertEqual(progress['managed_resources'],14)
+        self.assertNotIn('drift_review',progress)
         self.assertNotIn(CANARY,json.dumps(progress))
 
     def test_nested_dynamic_keys_and_false_vs_zero(self):

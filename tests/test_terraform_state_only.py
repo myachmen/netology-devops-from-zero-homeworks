@@ -117,10 +117,10 @@ class StateOnlyTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             saved = Path(directory) / "private.tfplan"
             saved.write_bytes(b"SYNTHETIC"); saved.chmod(0o600)
-            decision = policy.approve(fixture(), manifest)
+            decision = runner.state_policy.approve(fixture())
             binding = {"started": 10, "source_sha": "a" * 40, "binary": runner.saved_checksum(saved),
-                       "policy": policy.manifest_gate(manifest), "review": decision}
-            runner.binding_gate(binding, saved, decision, manifest, "a" * 40, 910)
+                       "policy": runner.state_policy.policy_digest(), "review": decision}
+            runner.binding_gate(binding, saved, decision, "a" * 40, 910)
             for mutation in ("checksum", "ttl", "backward", "policy", "review", "sha", "mode"):
                 b, m, d, now, sha = copy.deepcopy(binding), copy.deepcopy(manifest), copy.deepcopy(decision), 11, "a" * 40
                 if mutation == "checksum": b["binary"] = "b" * 64
@@ -130,7 +130,7 @@ class StateOnlyTests(unittest.TestCase):
                 if mutation == "review": d["change_digest"] = "b" * 64
                 if mutation == "sha": sha = "b" * 40
                 if mutation == "mode": saved.chmod(0o644)
-                with self.assertRaises(runner.Stop): runner.binding_gate(b, saved, d, m, sha, now)
+                with self.assertRaises(runner.Stop): runner.binding_gate(b, saved, d, sha, now)
                 saved.chmod(0o600)
 
     def test_gate_events_tags_forks_reruns_no_side_effects(self):
@@ -143,11 +143,11 @@ class StateOnlyTests(unittest.TestCase):
                 with self.assertRaises(runner.Stop): runner.execute(values, "apply")
                 checkout.assert_not_called(); network.assert_not_called()
 
-    def test_checkout_dirty_and_missing_policy(self):
+    def test_checkout_dirty_and_active_policy_binding(self):
         with patch.object(runner.subprocess, "check_output", side_effect=["a" * 40, " M script.py"]):
             with self.assertRaisesRegex(runner.Stop, "CHECKOUT_DIRTY"): runner.verify_checkout(ROOT, env())
-        with tempfile.TemporaryDirectory() as directory:
-            with self.assertRaisesRegex(runner.Stop, "POLICY_FILE"): runner.load_manifest(Path(directory))
+        self.assertEqual(runner.state_policy.VERSION, "managed-noop-state-refresh-v1")
+        self.assertFalse(hasattr(runner, "load_manifest"))
 
     def test_redacted_error_and_no_native_values(self):
         output = io.StringIO()
@@ -161,7 +161,7 @@ class RuntimeTests(unittest.TestCase):
     # Reuse meaningful fake native process/S3 adapter and cleanup assertions.
     def test_positive_drift_and_output_same_plan_once(self):
         plan, manifest = approved_fixture()
-        error, result, progress, calls, heads = self.simulate("apply", plan, 2, manifest=manifest)
+        error, result, progress, calls, heads = self.simulate("apply", plan, 2)
         self.assertIsNone(error)
         self.assertEqual(calls, ["version", "init", "validate", "plan", "show", "apply"])
         self.assertEqual(heads, 4)
@@ -170,7 +170,7 @@ class RuntimeTests(unittest.TestCase):
 
     def test_apply_never_runs_with_uncertain_pre_apply_lock(self):
         plan, manifest = approved_fixture()
-        error, _, _, calls, _ = self.simulate("apply", plan, 2, manifest=manifest, heads=[200, 404, 403, 404])
+        error, _, _, calls, _ = self.simulate("apply", plan, 2, heads=[200, 404, 403, 404])
         self.assertEqual(error, "LOCK_REQUIRES_REVIEW")
         self.assertNotIn("apply", calls)
 
@@ -179,7 +179,7 @@ class RuntimeTests(unittest.TestCase):
         for options, expected in (({"fail": "apply"}, "COMMAND_FAILED"),
                                   ({"timeout": "apply"}, "COMMAND_TIMEOUT"),
                                   ({"heads": [200, 404, 404, 403]}, "LOCK_REQUIRES_REVIEW")):
-            error, _, progress, calls, _ = self.simulate("apply", plan, 2, manifest=manifest, **options)
+            error, _, progress, calls, _ = self.simulate("apply", plan, 2, **options)
             self.assertEqual(error, expected)
             self.assertEqual(calls.count("apply"), 1)
             self.assertEqual(calls.count("plan"), 1)
@@ -188,7 +188,7 @@ class RuntimeTests(unittest.TestCase):
     def test_ttl_expiry_blocks_runtime_apply(self):
         plan, manifest = approved_fixture()
         with patch.object(runner.time, "monotonic", side_effect=[1, 902]):
-            error, _, _, calls, _ = self.simulate("apply", plan, 2, manifest=manifest)
+            error, _, _, calls, _ = self.simulate("apply", plan, 2)
         self.assertEqual(error, "PLAN_TTL")
         self.assertNotIn("apply", calls)
 

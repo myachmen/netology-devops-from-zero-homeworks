@@ -1,3 +1,7 @@
+> Historical preparation record. Current PR3 activation contract is
+> [task188 owner decision package](TERRAFORM_APPLY_SINGLE_OWNER.md); the old
+> plan-only/inert setup below is not an instruction for the current candidate.
+
 # Task181 — main-targeted plan-only promotion
 
 The owner-reported main ruleset is independently confirmed active, targeting

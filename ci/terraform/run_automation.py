@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Owner-gated main-push automation. Single-owner merge gate; task184 prepares a PR, not live authorization."""
+"""Owner-gated main-push automation. Single-owner merge gate; task188 prepares a PR, not live authorization."""
 import hashlib
 import json
 import os
@@ -11,8 +11,7 @@ import time
 from pathlib import Path
 import run_plan_only as common
 from automation_policy import ReviewError, review
-import state_only_policy as state_policy
-from drift_projection import project as project_drift
+import state_reconcile_policy as state_policy
 
 REPO = common.REPOSITORY
 MANIFEST = {".terraform.lock.hcl", "alb.tf", "backend.tf", "cloud-init.yaml.tftpl", "compute.tf", "network.tf", "outputs.tf", "providers.tf", "security.tf", "variables.tf", "versions.tf"}
@@ -44,25 +43,17 @@ def gate(env, mode):
         need(env.get("TF_APPLY_AUTHORIZATION") == APPLY_AUTHORIZATION, "APPLY_AUTHORIZATION")
 
 
-def load_manifest(repo):
-    path = repo / "ci/terraform/apply-policy.json"
-    need(path.is_file() and not path.is_symlink(), "POLICY_FILE")
-    value = common.load_private_json(path)
-    state_policy.manifest_gate(value)
-    return value
-
-
 def saved_checksum(path):
     need(path.is_file() and not path.is_symlink(), "PLAN_FILE")
     need(path.stat().st_mode & 0o777 == 0o600, "PLAN_PERMISSIONS")
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def binding_gate(binding, saved, policy, manifest, source_sha, now):
+def binding_gate(binding, saved, policy, source_sha, now):
     need(0 <= now - binding["started"] <= MAX_PLAN_AGE, "PLAN_TTL")
     need(binding["source_sha"] == source_sha, "PLAN_SOURCE")
     need(binding["binary"] == saved_checksum(saved), "PLAN_FILE_CHANGED")
-    need(binding["policy"] == state_policy.manifest_gate(manifest), "POLICY_CHANGED")
+    need(binding["policy"] == state_policy.policy_digest(), "POLICY_CHANGED")
     need(binding["review"] == policy, "POLICY_BINDING")
 
 
@@ -126,8 +117,7 @@ def execute(env, mode, repository=None, head=None, progress=None):
     root = repo / "terraform/infrastructure"
     verify_checkout(repo, env)
     source_gate(root)
-    manifest = load_manifest(repo) if mode == "apply" else None
-    policy_digest = state_policy.manifest_gate(manifest) if manifest is not None else None
+    policy_digest = state_policy.policy_digest() if mode == "apply" else None
     key = common.provider_key(env["TF_YC_SERVICE_ACCOUNT_KEY_JSON"])
     pub = common.public_key(env["TF_SSH_PUBLIC_KEY"])
     trusted = dict(env, TF_PLAN_APPROVED_SHA=env["GITHUB_SHA"])
@@ -170,12 +160,10 @@ def execute(env, mode, repository=None, head=None, progress=None):
                 summary = review(plan)
                 need(exitcode != 0 or (all(x["actions"] == ["no-op"] for x in summary["resources"]) and not summary["output_change_count"]), "EXIT_JSON_MISMATCH")
                 status.update(summary)
-                # Safe evidence survives a later policy denial; never raw values.
-                status["drift_review"] = project_drift(plan)
                 status["status"] = "PLAN_NOOP" if exitcode == 0 else "PLAN_CHANGES_DETECTED"
                 if mode == "apply":
                     status["stage"] = "apply_gate"
-                    approved = state_policy.approve(plan, manifest)
+                    approved = state_policy.approve(plan)
                     need(approved["policy_digest"] == policy_digest, "POLICY_CHANGED")
                     status.update({k: approved[k] for k in ("policy_version", "policy_digest", "state_changes")})
                     binding = {"started": plan_started, "binary": binary_digest,
@@ -188,16 +176,14 @@ def execute(env, mode, repository=None, head=None, progress=None):
                     common.verify_main(trusted)
                     verify_checkout(repo, env)
                     source_gate(root)
-                    current_manifest = load_manifest(repo)
                     current_plan = common.load_private_json(private / "show.out")
-                    current_review = state_policy.approve(current_plan, current_manifest)
-                    binding_gate(binding, saved, current_review, current_manifest,
+                    current_review = state_policy.approve(current_plan)
+                    binding_gate(binding, saved, current_review,
                                  env["GITHUB_SHA"], time.monotonic())
-                    if exitcode == 0:
-                        need(not approved["state_changes"], "EXIT_JSON_MISMATCH")
+                    if not approved["state_changes"]:
+                        need(exitcode == 0, "EXIT_JSON_MISMATCH")
                         status["status"] = "NO_CHANGES_APPLY_SKIPPED"
                     else:
-                        need(approved["state_changes"], "EXIT_JSON_MISMATCH")
                         status["stage"] = "apply"
                         run("apply", root, child, private, status["commands"])
                         status["status"] = "SAVED_PLAN_APPLY_EXIT_0"

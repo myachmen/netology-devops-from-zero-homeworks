@@ -1,4 +1,6 @@
-"""Bounded evidence projection, never approval. Pure offline API, no CLI/I/O.
+"""Historical optional task187 evidence helper; not in the task188 Apply path.
+
+Bounded evidence projection, never approval. Pure offline API, no CLI/I/O.
 
 Schema patterns: Yandex provider v0.238.0 yandex/resource_yandex_*.go;
 resource_yandex_alb_backend_group.go: expectedStatusesSchemaKey/healthCheck;
@@ -9,7 +11,7 @@ No raw before/after values are returned, including recognized status strings.
 """
 from automation_policy import require, review
 from plan_policy import EXPECTED_ADDRESSES, PROVIDER
-from state_only_policy import NODE_KEYS
+NODE_KEYS = frozenset({"k8s-control-1", "k8s-worker-1", "k8s-worker-2"})
 
 INDEX = object()
 MISSING = object()
@@ -120,7 +122,7 @@ def project(plan):
                 row = {"section": section, "alias": alias, "path": projected,
                     "before_type": kind(before), "after_type": kind(after), "sensitive": sensitive,
                     "unknown": unknown, "structural": structural, "category": category,
-                    "values": "WITHHELD", "policy_approval": False}
+                    "values": "WITHHELD", "evidence_only": True}
                 # Container shape is safe only at vetted schema locations; never
                 # expose dynamic map keys/content or sensitive/unknown shapes.
                 shape_ok = vetted and not sensitive and not unknown and (not private_map or path == ("labels",))
@@ -129,8 +131,8 @@ def project(plan):
                 if status:
                     row["before_status_category"] = status_category(before) if not sensitive and not unknown else "WITHHELD"
                     row["after_status_category"] = status_category(after) if not sensitive and not unknown else "WITHHELD"
-                    row["lifecycle_gate"] = "DENY_REQUIRES_IDENTITY_PREEMPTIBLE_AND_TRANSITION_REVIEW"
+                    row["lifecycle_note"] = "OBSERVED_STATE_ONLY_NOT_VM_WRITE_PERMISSION"
                 rows.append(row); require(len(rows) <= 2000, "PROJECTION_SIZE")
-    return {"projection_version": "schema-v0.238.0-evidence-v1", "policy_approval": False,
+    return {"projection_version": "schema-v0.238.0-evidence-v1", "evidence_only": True,
         "managed_resources": summary["managed_resources"], "actions": summary["actions"],
         "drift_count": summary["drift_count"], "output_change_count": summary["output_change_count"], "rows": rows}

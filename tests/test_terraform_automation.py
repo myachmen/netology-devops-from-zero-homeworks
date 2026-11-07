@@ -43,12 +43,11 @@ def changed():
 
 class AutomationTests(unittest.TestCase):
     def simulate(self, mode="plan", plan=None, exitcode=0, fail=None, timeout=None,
-                 heads=None, manifest=None, stale=False, bad_json=False, version="1.15.7", mutate_saved=False):
+                 heads=None, stale=False, bad_json=False, version="1.15.7", mutate_saved=False):
         plan = fixture() if plan is None else plan
         calls, temporary = [], []
         progress = {}
         values = env(mode)
-        manifest = {"version": "state-only-v1", "drift": [], "outputs": []} if manifest is None else manifest
         heads = iter(([200, 404, 404, 404] if mode == "apply" else [200, 404, 404]) if heads is None else heads)
         with tempfile.TemporaryDirectory() as directory:
             repo = Path(directory)
@@ -92,7 +91,7 @@ class AutomationTests(unittest.TestCase):
                     (temporary[-1] / "private.tfplan").write_bytes(b"ALTERED")
 
             error, result = None, None
-            with patch.object(runner, "load_manifest", return_value=manifest), patch.object(runner, "verify_checkout"), patch.object(runner.common, "verify_main", side_effect=api), patch.object(runner.subprocess, "run", side_effect=fake), patch.object(runner, "s3_head", side_effect=lambda *_: next(heads)) as head:
+            with patch.object(runner, "verify_checkout"), patch.object(runner.common, "verify_main", side_effect=api), patch.object(runner.subprocess, "run", side_effect=fake), patch.object(runner, "s3_head", side_effect=lambda *_: next(heads)) as head:
                 try:
                     result = runner.execute(values, mode, repo, progress=progress)
                 except Exception as caught:
@@ -124,7 +123,7 @@ class AutomationTests(unittest.TestCase):
                                                  "after_unknown": False}}
         manifest = {"version": "state-only-v1", "drift": [], "outputs": [
             {"name": "synthetic", "path": [], "before": 1, "after": 2}]}
-        error, result, progress, calls, _ = self.simulate(mode="apply", plan=plan, exitcode=2, manifest=manifest)
+        error, result, progress, calls, _ = self.simulate(mode="apply", plan=plan, exitcode=2)
         self.assertIsNone(error)
         self.assertEqual(result["status"], "SAVED_PLAN_APPLY_EXIT_0")
         self.assertEqual(calls.count("plan"), 1)
@@ -137,13 +136,13 @@ class AutomationTests(unittest.TestCase):
         self.assertEqual(result["status"], "NO_CHANGES_APPLY_SKIPPED")
         self.assertNotIn("apply", calls)
 
-    def test_unapproved_output_never_applies(self):
+    def test_output_refresh_requires_no_per_field_manifest(self):
         plan = fixture()
         plan["output_changes"]["synthetic"]["after"] = 2
         plan["output_changes"]["synthetic"]["actions"] = ["update"]
         error, _, _, calls, _ = self.simulate(mode="apply", plan=plan, exitcode=2)
-        self.assertEqual(error, "UNAPPROVED_OUTPUTS")
-        self.assertNotIn("apply", calls)
+        self.assertIsNone(error)
+        self.assertEqual(calls.count("apply"), 1)
 
     def test_destruction_replacement_creation_denied(self):
         for actions in (["delete"], ["create"], ["delete", "create"], ["create", "delete"]):

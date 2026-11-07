@@ -24,7 +24,7 @@ def fixture():
     ]
     return {
         "format_version": "1.2", "terraform_version": policy.TERRAFORM_VERSION,
-        "complete": True, "errored": False,
+        "complete": True, "errored": False, "applyable": True,
         "prior_state": {"values": {"root_module": {"resources": copy.deepcopy(resources)}}},
         "planned_values": {"root_module": {"resources": copy.deepcopy(resources)}},
         "resource_changes": [

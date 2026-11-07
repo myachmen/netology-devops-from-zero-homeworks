@@ -1,7 +1,10 @@
-"""Exact, reviewed state reconciliation only. No I/O, CLI or network on import.
+"""Historical task184/187 per-field policy, NOT the active Apply gate.
 
-The production manifest deliberately has NO exceptions. Tests use synthetic
-manifests, never a copy of production state or its secret values.
+Exact, reviewed state reconciliation only. No I/O, CLI or network on import.
+
+The old manifest is retained only for historical tests/traceability.
+Active production policy is state_reconcile_policy.py and reads no manifest.
+Tests here use synthetic data, never production state or its secret values.
 """
 import hashlib
 import json
