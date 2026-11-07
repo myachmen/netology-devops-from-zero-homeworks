@@ -1,7 +1,7 @@
 # Дипломный проект: DevOps-инфраструктура в Yandex Cloud
 
-> **Статус доказательств на 07.11.2026:** инфраструктура и Kubernetes ранее развёрнуты; приложение, мониторинг и автоматический tag-triggered CD v1.0.5 реализованы.
-> Исторические проверки и скриншоты не гарантируют текущий uptime. Для сдачи остаются подтверждение адресов/доступа проверяющему и готовность продемонстрировать восстановление с нуля.
+> **Состояние проекта на 7 ноября 2026 года:** инфраструктура и Kubernetes-кластер были развёрнуты; приложение и мониторинг проверены. Автоматический выпуск версии 1.0.5 по Git-тегу завершился успешно.
+> Проверки и скриншоты отражают состояние на момент их получения. Стенд не планируется поддерживать постоянно работающим; условия доступа и повторной демонстрации приведены ниже.
 >
 > **Основа проекта:** [дипломное задание Нетологии «Дипломный практикум в Yandex.Cloud»](https://github.com/netology-code/devops-diplom-yandexcloud).
 
@@ -9,19 +9,19 @@
 
 Создать воспроизводимую инфраструктуру в Yandex Cloud, развернуть в ней Kubernetes, опубликовать тестовое контейнерное приложение, организовать мониторинг и настроить автоматизированные процессы сборки, доставки приложения и управления инфраструктурой.
 
-Для Kubernetes выбран **self-hosted** вариант с установкой через Ansible и Kubespray вместо управляемого Kubernetes-сервиса.
+Кластер Kubernetes установлен самостоятельно на ВМ с помощью Ansible и Kubespray, без использования управляемого Kubernetes-сервиса.
 
 ## Состояние выполнения
 
 | Этап задания | Состояние | Результат и дальнейшие действия |
 |---|---|---|
-| 1. Создание облачной инфраструктуры | Конфигурация готова, есть исторические проверки | Отдельные bootstrap/S3 backend и infrastructure. Terraform CI Apply #6 успешен без изменений managed resources; готовность демонстрации с нуля остаётся OWNER_ACTION_REQUIRED. |
-| 2. Создание Kubernetes-кластера | Развёрнут и исторически проверен | Kubespray/Ansible, три VM; 3/3 Ready подтверждались ранее. Текущее состояние узлов не проверялось, worker-2 прерываемый. Точный kubeconfig path требует документирования. |
-| 3. Создание тестового приложения | Реализован | Отдельный app repo, Dockerfile, Yandex Container Registry; версия1.0.5 и immutable image reference ниже. |
-| 4. Мониторинг, деплой приложения и автоматизация Terraform | Реализованы, evidence датирована | Prometheus/Grafana/Alertmanager/exporters, Kubernetes dashboards; исторический HTTP80. Адреса для проверяющего и снимок Terraform pipeline ещё требуют оформления. |
-| 5. CI/CD приложения | Tag-triggered CD подтверждён OWNER_UI | v1.0.5 / Diploma CI/CD #33: test/build-and-push/deploy SUCCESS, rollout Ready, HTTP200/exact HTML version. |
+| 1. Создание облачной инфраструктуры | Конфигурация готова, развёртывание проверялось ранее | Создание служебных ресурсов и основной инфраструктуры разделено; состояние хранится в S3. Terraform pipeline № 6 успешно применил сохранённый план без изменения управляемых ресурсов. Полный цикл восстановления с нуля ещё предстоит подтвердить. |
+| 2. Создание Kubernetes-кластера | Развёрнут и проверялся ранее | Ansible/Kubespray, три ВМ. Ранее все три узла имели статус Ready; текущее состояние не проверялось. Worker-2 прерываемый. Точный путь к защищённому kubeconfig нужно уточнить. |
+| 3. Создание тестового приложения | Реализовано | Отдельный репозиторий, Dockerfile и образ в Yandex Container Registry. Подтверждённая версия — 1.0.5. |
+| 4. Мониторинг, приложение и автоматизация Terraform | Реализованы и подтверждены датированными проверками | Prometheus, Grafana, Alertmanager, экспортёры метрик и дашборды Kubernetes. Условия доступа для проверки описаны ниже; ссылку на скриншот Terraform pipeline ещё нужно добавить. |
+| 5. CI/CD приложения | Автоматический выпуск по тегу подтверждён | Выпуск v1.0.5: тестирование, сборка, публикация образа и развёртывание успешны; приложение вернуло HTTP 200 и ожидаемую версию HTML-страницы. |
 
-Обозначения evidence: **VERIFIED_CONFIG** — проверенная конфигурация; **OWNER_UI** — подтверждённые владельцем скриншоты; **REUSED_HISTORICAL** — прежние датированные runtime-проверки. **UNKNOWN** — текущее состояние без свежего наблюдения.
+Конфигурационные файлы показывают устройство стенда, а датированные проверки и снимки экрана — результаты его работы. Они не подтверждают доступность сервисов в настоящий момент.
 
 ## Архитектура
 
@@ -35,33 +35,32 @@
 | `diplom-subnet-d` | `ru-central1-d` | `10.10.2.0/24` |
 | `diplom-subnet-e` | `ru-central1-e` | `10.10.3.0/24` |
 
-В текущем развёртывании используется первая и вторая подсети; третья создана как часть сетевой инфраструктуры. Kubernetes-узлы распределены по двум зонам доступности, а не по трём.
+При описанном развёртывании ВМ размещались в первой и второй подсетях; третья подсеть создана как часть облачной инфраструктуры. Узлы Kubernetes распределены по двум зонам доступности.
 
 ### Виртуальные машины Kubernetes
 
-Таблица и адреса ниже — историческое описание развёртывания, не свежий inventory.
-На 07.11.2026 текущее состояние VM не перепроверялось; worker-2 preemptible ранее мог быть NotReady.
+Таблица и адреса ниже относятся к ранее развёрнутому стенду. На 7 ноября 2026 года текущее состояние ВМ не проверялось. Прерываемый узел worker-2 ранее мог находиться в состоянии NotReady.
 
 | Имя | Роль | Зона | Внутренний IP | vCPU | RAM | Диск |
 |---|---|---|---|---:|---:|---:|
-| `k8s-control-1` | Control Plane / etcd | `ru-central1-a` | `10.10.1.12` | 2 | 4 ГБ | 30 ГБ |
+| `k8s-control-1` | Управляющий узел / etcd | `ru-central1-a` | `10.10.1.12` | 2 | 4 ГБ | 30 ГБ |
 | `k8s-worker-1` | Worker | `ru-central1-d` | `10.10.2.28` | 2 | 6 ГБ | 50 ГБ |
 | `k8s-worker-2` | Worker | `ru-central1-d` | `10.10.2.34` | 2 | 6 ГБ | 50 ГБ |
 
-ОС узлов — Ubuntu 22.04 LTS. Для `k8s-worker-1` закреплён публичный IP `158.160.190.231` после устранения проблем с исходящими соединениями. Публичные IP других узлов, выделяемые динамически, не фиксируются в этом документе.
+ОС узлов — Ubuntu 22.04 LTS. Для `k8s-worker-1` был закреплён публичный IP `158.160.190.231` после устранения проблем с исходящими соединениями. Публичные IP других узлов, выделяемые динамически, не фиксируются в этом документе.
 
-В учебной конфигурации управляющая машина подключается к worker-узлам по SSH через control-plane (`ProxyJump`). Выделенного bastion-хоста нет.
+В учебной конфигурации управляющая машина подключается к рабочим узлам по SSH через управляющий узел (`ProxyJump`). Выделенного bastion-хоста нет.
 
 ## Этап 1. Подготовка инфраструктуры Terraform
 
 Terraform-конфигурации разделены на два независимых каталога:
 
-- [`terraform/bootstrap/`](terraform/bootstrap/) — сервисная учётная запись, IAM-права, статический ключ доступа и бакет Object Storage для Terraform state.
-- [`terraform/infrastructure/`](terraform/infrastructure/) — S3 backend, VPC, подсети, security group и три Compute Cloud ВМ.
+- [`terraform/bootstrap/`](terraform/bootstrap/) — сервисная учётная запись, права IAM, статический ключ доступа и бакет Object Storage для состояния Terraform.
+- [`terraform/infrastructure/`](terraform/infrastructure/) — S3-бэкенд, VPC, подсети, группы безопасности и три ВМ Compute Cloud.
 
-Основная конфигурация использует удалённое состояние в бакете `netology-diplom-tfstate-myachmen`, ключ `infrastructure/terraform.tfstate`. Ключи для S3 backend получаются через outputs bootstrap-конфигурации и **не публикуются** в Git.
+Основная конфигурация использует удалённое состояние в бакете `netology-diplom-tfstate-myachmen`, ключ `infrastructure/terraform.tfstate`. Ключи для доступа к S3-бэкенду получаются через выходные значения bootstrap-конфигурации и **не публикуются** в Git.
 
-Для развёртывания использовались Terraform и Yandex Cloud CLI. При ранней исторической проверке после изменения публичного IP `k8s-worker-1` конфигурация и состояние Terraform были синхронизированы: контрольный `terraform plan` завершился сообщением `No changes`.
+Для развёртывания использовались Terraform и Yandex Cloud CLI. При одной из ранних проверок после изменения публичного IP `k8s-worker-1` конфигурация и состояние Terraform были синхронизированы: контрольный `terraform plan` завершился сообщением `No changes`.
 
 **Что ещё требуется проверить по заданию:** воспроизводимый полный цикл уничтожения и создания инфраструктуры без дополнительных ручных изменений, а также минимально необходимые права сервисной учётной записи. Известное ограничение SSH-доступа: в опубликованной конфигурации [`security.tf`](terraform/infrastructure/security.tf) порт 22 открыт для `0.0.0.0/0`.
 
@@ -73,130 +72,119 @@ Terraform-конфигурации разделены на два независ
 |---|---|
 | Kubernetes | `v1.33.7` |
 | Kubespray | `v2.29.1` |
-| Container Runtime | `containerd 2.1.5` |
+| Среда выполнения контейнеров | `containerd 2.1.5` |
 | CNI | Calico (VXLAN) |
 | ОС Kubernetes-узлов | Ubuntu 22.04 LTS |
 
-Использован project profile поверх Kubespray v2.29.1: [group_vars](ansible/kubespray/group_vars/k8s_cluster.yml) содержит overrides containerd/Calico/IPVS и metrics. Это не неизменённый upstream sample. [Project launcher/profile](ansible/kubespray/) и [защищённый inventory profile](ansible/kubespray-current/) описывают подготовку; локальные credentials/inventory artifacts в Git не публикуются.
+Поверх Kubespray v2.29.1 используется профиль проекта: [group_vars](ansible/kubespray/group_vars/k8s_cluster.yml) содержит настройки containerd, Calico, IPVS и метрик, отличающиеся от стандартного примера. Подготовка описана в [профиле Kubespray](ansible/kubespray/) и [профиле защищённого inventory](ansible/kubespray-current/). Учётные данные и локальные файлы inventory с чувствительными параметрами не публикуются в Git.
 
 Конфигурация и подробная инструкция:
 
 - **[Развёртывание Kubernetes с помощью Kubespray](ansible/README.md)**;
-- [Ansible inventory](ansible/inventory/diplom/hosts.yaml);
+- [Inventory Ansible](ansible/inventory/diplom/hosts.yaml);
 - [Пример SSH-конфигурации](ansible/ssh_config.example).
 
 ### Проверки Kubernetes
 
-Исторически после установки и повторного запуска виртуальных машин выполнены проверки ниже. Более поздний postcheck04.11.2026 также подтверждал работоспособность; current health не заявляется:
+После установки и повторного запуска ВМ были выполнены проверки ниже. Последующая проверка 4 ноября 2026 года также подтвердила работоспособность кластера. Это результаты прошлых проверок, а не сведения о текущем состоянии:
 
 1. Ansible `ping` завершился успешно на всех трёх узлах.
 2. `kubectl get nodes -o wide` показал три узла в состоянии `Ready`.
-3. Системные Pod в `kube-system`, включая Calico, CoreDNS, `kube-proxy` и компоненты control-plane, работали (`Running`, `1/1`).
-4. Тестовый HTTP-запрос из Pod на `k8s-worker-1` в nginx Pod на `k8s-worker-2` завершился с `HTTP_CODE=200`, что подтвердило межузловую связность через Calico. Временные тестовые Pod после проверки удалены.
+3. Системные поды в `kube-system`, включая Calico, CoreDNS, `kube-proxy` и компоненты управляющего узла, работали (`Running`, `1/1`).
+4. Тестовый HTTP-запрос из пода на `k8s-worker-1` в под nginx на `k8s-worker-2` завершился с `HTTP_CODE=200`, что подтвердило межузловую связность через Calico. Временные тестовые поды после проверки удалены.
 
-Команды просмотра состояния (на control-plane):
+Команды просмотра состояния на управляющем узле:
 
 ```bash
 sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf get nodes -o wide
 sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf get pods --all-namespaces -o wide
 ```
 
-**Примечание:** команды выше — исторический control-plane пример. В последующих работах использовался отдельный защищённый project kubeconfig с проверкой TLS. **OWNER_ACTION_REQUIRED:** подтвердить и документировать точный безопасный путь, включая соответствие ожидаемому в задании `~/.kube/config`; содержимое kubeconfig и admin credentials не публиковать.
+**Примечание:** команды приведены как пример ранее использовавшегося доступа на управляющем узле. Позднее применялся отдельный защищённый kubeconfig с проверкой TLS. Нужно уточнить и документировать его расположение, в том числе соответствие ожидаемому в задании пути `~/.kube/config`. Содержимое kubeconfig и административные учётные данные публиковать нельзя.
 
-Опубликованные материалы: [узлы](img/22-kubernetes-nodes.png), [Deployment/Pods](img/23-kubernetes-deployment-pods.png), [Service/Ingress](img/24-kubernetes-service-ingress.png). Подписи нейтральны: файлы не являются текущей live проверкой.
+Материалы проверки: [узлы](img/22-kubernetes-nodes.png), [Deployment и поды](img/23-kubernetes-deployment-pods.png), [Service и Ingress](img/24-kubernetes-service-ingress.png). Снимки отражают состояние на момент их получения.
 
 ## Этап 3. Тестовое приложение
 
-Nginx отдаёт статическую HTML-страницу. [Репозиторий приложения](https://github.com/myachmen/netology-diploma-app/tree/4cbd4ce0c69a6660d40692c22ede1cca217f515a),
-[Dockerfile](https://github.com/myachmen/netology-diploma-app/blob/4cbd4ce0c69a6660d40692c22ede1cca217f515a/Dockerfile).
-Подтверждённая версия — **1.0.5**, source commit `4cbd4ce0c69a6660d40692c22ede1cca217f515a`.
+Приложение на nginx отдаёт статическую HTML-страницу. Код размещён в [отдельном репозитории](https://github.com/myachmen/netology-diploma-app/tree/4cbd4ce0c69a6660d40692c22ede1cca217f515a); для сборки подготовлен [Dockerfile](https://github.com/myachmen/netology-diploma-app/blob/4cbd4ce0c69a6660d40692c22ede1cca217f515a/Dockerfile).
+Подтверждённая версия — **1.0.5**, коммит исходного кода — `4cbd4ce0c69a6660d40692c22ede1cca217f515a`.
 
-Immutable OCI image reference успешного tag release (без registry credentials):
+Образ успешного выпуска закреплён по неизменяемому OCI-дайджесту:
 
 ```text
 cr.yandex/crpb1oihnpa2uai8m3mp/netology-diploma-app@sha256:0b99b6410f06de1e7aa10c196deb1115eae86b30f0a8a012d839f939b693a775
 ```
 
-OWNER_UI: tag workflow #33 подтвердил rollout Ready, public HTTP200 и exact HTML version1.0.5 на момент запуска. **OWNER_ACTION_REQUIRED:** подтвердить HTTP80 URL приложения для проверяющего; адрес здесь не выдумывается.
+При выпуске по тегу v1.0.5 приложение успешно развернулось и вернуло HTTP 200 с ожидаемой версией HTML-страницы. Порядок предоставления доступа для проверки описан в разделе [о доступности стенда](#доступность-стенда-и-демонстрация-результатов).
 
 ## Этап 4. Мониторинг, приложение и управление Terraform
 
-**VERIFIED_CONFIG:** kube-prometheus-stack92.17.0, Prometheus/Grafana/Alertmanager,
-node-exporter и метрики Kubernetes. [Canonical values](ansible/helm/monitoring-values.yaml),
-[deployment profile](ansible/helm/monitoring.md). Старые `kubernetes/monitoring/values.yaml`
-и disabled Grafana ingress не являются дополнительным overlay/вторым release.
+Для мониторинга использован Helm-чарт `kube-prometheus-stack` версии **92.17.0**: Prometheus, Grafana, Alertmanager, node-exporter и метрики Kubernetes. Сохранены [основные параметры Helm](ansible/helm/monitoring-values.yaml) и [инструкция по развёртыванию](ansible/helm/monitoring.md). Старые `kubernetes/monitoring/values.yaml` и отключённый Grafana ingress не нужно применять как дополнительные настройки или отдельное развёртывание.
 
-**REUSED_HISTORICAL:** postcheck04.11.2026 — monitoring revision2,28UP/0DOWN,
-включая kube-proxy/etcd, Grafana health/login и Alertmanager readiness HTTP200.
-Этим результатом заменены старые scrape gaps из раздела130 в deployment profile;
-это не текущая проверка. Prometheus targets screenshot показывает несколько UP,
-но сам по себе не доказывает total28/28. **OWNER_UI:** заполненные Kubernetes/Node Exporter panels подтверждены на опубликованных09/10.
+По результатам проверки **4 ноября 2026 года** release `monitoring` имел ревизию 2; Prometheus собирал метрики с **28 доступных целей, недоступных не было** (28 UP / 0 DOWN), включая kube-proxy и etcd. Проверки Grafana и готовности Alertmanager возвращали HTTP 200. В инструкции сохранены более ранние сведения о проблемах сбора метрик; последующая проверка подтвердила их устранение. Текущее состояние сервисов здесь не утверждается.
 
-![Опубликованный Kubernetes dashboard](img/09-grafana-kubernetes-cluster.png)
-![Опубликованный Node Exporter dashboard](img/10-grafana-nodes.png)
+На опубликованных снимках Grafana показаны заполненные панели состояния Kubernetes и Node Exporter: CPU, память, сеть, диски и другие метрики. Снимок Prometheus targets показывает несколько доступных целей; он сам по себе не подтверждает состояние всех 28 целей.
 
-[Prometheus targets](img/12-prometheus-targets.png) ·
-[Alertmanager: Watchdog](img/15-alertmanager-alerts.png) ·
-[Alertmanager status](img/16-alertmanager-status.png).
-Это снимки, не гарантия uptime. Alertmanager принимает Watchdog; receiver null,
-внешняя доставка уведомлений не подтверждена. Cluster disabled у единственного
-экземпляра не объявляется дефектом. Prometheus emptyDir/Grafana persistence=false
-означают ephemeral storage.
+![Дашборд состояния Kubernetes](img/09-grafana-kubernetes-cluster.png)
+![Дашборд метрик узлов Node Exporter](img/10-grafana-nodes.png)
 
-Конфигурационная схема HTTP: ALB80 → worker NodePort30080 → Traefik → Service → Pods.
-[ALB HCL](terraform/infrastructure/alb.tf), [Traefik values](ansible/helm/traefik-values.yaml),
-[app manifests](kubernetes/app/). Runtime этого пути подтверждался исторически;
-`traefik-migration.md` — prepared-only план, не свидетельство выполненной миграции.
-**OWNER_ACTION_REQUIRED:** подтвердить Grafana HTTP80 URL/существующий Host-resolution
-и безопасный способ передачи логина проверяющему. Localhost port-forward не является публичным URL.
+[Цели сбора метрик Prometheus](img/12-prometheus-targets.png) ·
+[Watchdog в Alertmanager](img/15-alertmanager-alerts.png) ·
+[Состояние Alertmanager](img/16-alertmanager-status.png).
 
-Выбран CI/CD-вариант автоматизации Terraform. Workflow находится **в другой ветке main**:
+Alertmanager принимал Watchdog. На снимке указан получатель `null`; внешняя доставка уведомлений не подтверждена. Кластерный режим Alertmanager отключён: использовался один экземпляр. В параметрах Helm для Prometheus задан `emptyDir`, а сохранение данных Grafana отключено (`persistence=false`); при пересоздании подов данные и несохранённые настройки могут быть потеряны.
+
+Настроенный HTTP-маршрут: **ALB, порт 80 → рабочие узлы, NodePort 30080 → Traefik → Service → поды приложения**. Сохранены [конфигурация ALB](terraform/infrastructure/alb.tf), [параметры Traefik](ansible/helm/traefik-values.yaml) и [манифесты приложения](kubernetes/app/). Работа маршрута подтверждалась прошлыми проверками. Файл `traefik-migration.md` описывает подготовку конфигурации и сам по себе не является свидетельством выполненной миграции.
+
+### Автоматизация Terraform
+
+Выбран вариант автоматического применения Terraform через CI/CD. Workflow расположен **в другой ветке — main**:
 [terraform-automation.yml](https://github.com/myachmen/netology-devops-from-zero-homeworks/blob/7661c1b7535716f211e27be67c542d19d6ebbe8a/.github/workflows/terraform-automation.yml).
-**OWNER_UI:** Terraform automation #6 — saved-plan Apply SUCCESS,14 managed no-op,
-1 output change. Это подтверждает pipeline, не создание всех ресурсов с нуля.
-**OWNER_ACTION_REQUIRED:** добавить проверенную ссылку на уже сохранённый снимок
-именно Terraform pipeline и подтвердить готовность from-scratch демонстрации,
-не выполняя новый Apply/Destroy ради документации.
+
+Сохранённые скриншоты подтверждают успешный запуск **Terraform automation № 6**: сохранённый план применён без изменения 14 управляемых ресурсов, изменено одно выходное значение. Это подтверждает работу автоматизации, но не демонстрирует создание всех ресурсов с нуля. Для сдачи осталось добавить проверенную ссылку на сохранённый скриншот именно Terraform pipeline. Новый запуск Terraform ради оформления документа не требуется.
 
 ## Этап 5. CI/CD приложения
 
-[App workflow](https://github.com/myachmen/netology-diploma-app/blob/4cbd4ce0c69a6660d40692c22ede1cca217f515a/.github/workflows/docker-publish.yml):
-main commit → tests/build/push; feature/PR → offline tests;
-новый tag attempt1 → tests → exact-source image build/push → same-run digest deploy
-→ guarded rollout → публичный HTTP/HTML version smoke. Не обещается registry push
-для каждого feature commit; branch scope описан по фактическим guards.
+[Workflow приложения](https://github.com/myachmen/netology-diploma-app/blob/4cbd4ce0c69a6660d40692c22ede1cca217f515a/.github/workflows/docker-publish.yml) выполняет:
 
-**OWNER_UI,07.11.2026:** `v1.0.5`, commit `4cbd4ce0c69a6660d40692c22ede1cca217f515a`,
-`Diploma CI/CD #33`: **test/build-and-push/deploy SUCCESS**, rollout Ready,
-public HTTP200 и exact HTML version1.0.5. Это успешный автоматический tag-triggered CD,
-отдельный от исторической manual recovery v1.0.4. Старые failures/recovery не выдаются за current failure.
+- при коммите в `main` — тесты, сборку и публикацию образа;
+- для веток разработки и Pull Request — только проверки без публикации образа и развёртывания;
+- при создании нового тега, в первой попытке запуска — тесты, сборку и публикацию образа из точного коммита, развёртывание по дайджесту той же сборки, ожидание готовности и HTTP-проверку версии приложения.
 
-![Опубликованный снимок tag workflow](img/31-github-actions-tag-release.png)
-[Снимок шага deploy](img/32-github-actions-tag-deploy-success.png) ·
-[Снимок summary](img/33-github-actions-deploy-summary.png).
+На скриншотах от **7 ноября 2026 года** зафиксирован успешный выпуск `v1.0.5` из коммита `4cbd4ce0c69a6660d40692c22ede1cca217f515a`. В **Diploma CI/CD № 33** завершились все три задания — `test`, `build-and-push` и `deploy`; подтверждены готовность развёртывания, HTTP 200 и версия HTML-страницы **1.0.5**. Это автоматический выпуск по тегу, отдельный от более раннего ручного восстановления версии 1.0.4. Прежние ошибки и восстановление относятся к истории проекта.
 
-Сохранены immutable digest, exact source/tag/version, single-attempt policy,
-restricted SSH API tunnel, TLS/SNI/RBAC, baseline/atomic patch guards, rollout/smoke,
-production concurrency и cleanup. Повторный запуск, новый tag/release или rollback
-требуют отдельного разрешения и проверки фактического состояния.
+![Опубликованный снимок workflow выпуска по тегу](img/31-github-actions-tag-release.png)
+[Снимок шага развёртывания](img/32-github-actions-tag-deploy-success.png) ·
+[Снимок итогов проверки](img/33-github-actions-deploy-summary.png).
+
+Workflow проверяет соответствие коммита, тега, версии и дайджеста образа. Для доступа к Kubernetes API используется ограниченный SSH-туннель с проверкой TLS/SNI и правами RBAC. Перед единственным атомарным изменением Deployment проверяется его исходное состояние; затем выполняются проверки готовности и HTTP-ответа. Развёртывания используют общую группу ограничения параллельности, временные файлы и туннель очищаются после работы. Автоматический повтор или откат не выполняется; повторный запуск либо новый выпуск требует отдельного согласования и проверки фактического состояния.
+
+## Доступность стенда и демонстрация результатов
+
+Дипломный стенд в Yandex Cloud был развёрнут; Kubernetes, приложение, мониторинг и CI/CD проверялись. Результаты сохранены в конфигурационных файлах, опубликованных скриншотах и датированных описаниях проверок.
+
+Содержание облачных ресурсов требует оплаты, а дата проверки диплома заранее неизвестна. Поэтому стенд **не планируется поддерживать постоянно работающим**: к моменту проверки ссылки на приложение и Grafana могут быть недоступны. После завершения редактирования диплома планируется отдельно согласовать удаление облачных ресурсов для сокращения расходов. Текущее состояние облачных ресурсов не проверялось.
+
+Если для проверки понадобится работающий стенд, можно предварительно договориться с преподавателем о повторной подготовке и развёртывании для демонстрации. Потребуются время и облачные расходы. Сохранённые исходники Terraform, Ansible, Kubernetes и CI/CD служат основой для восстановления, однако **полный цикл развёртывания с нуля ещё не подтверждён**. Мгновенное или полностью автоматическое восстановление не гарантируется.
+
+Оригинальное задание предусматривает ссылки на приложение и Grafana с данными доступа, а также готовность показать создание ресурсов с нуля. Формат проверки по скриншотам с последующей демонстрацией необходимо **согласовать с преподавателем**; такое согласование пока не подтверждено, и скриншоты сами по себе не объявляются заменой этих требований.
+
+Перед согласованной демонстрацией нужно подтвердить актуальные HTTP-адреса приложения и Grafana, способ разрешения имени Grafana и безопасно передать данные входа отдельно от репозитория. Доступ через `127.0.0.1` и локальный port-forward не является публичным доступом для преподавателя.
 
 ## Материалы для сдачи диплома
 
-| Материал | Проверенная ссылка / оставшееся действие |
+| Материал | Ссылка и сведения, которые нужно дополнить |
 |---|---|
-| Terraform/configs и backend | [bootstrap](terraform/bootstrap/), [infrastructure](terraform/infrastructure/); **OWNER_ACTION_REQUIRED:** from-scratch демонстрация и подтверждение достаточности/минимальности IAM прав, без нового запуска ради README |
-| Terraform automation | [Workflow main](https://github.com/myachmen/netology-devops-from-zero-homeworks/blob/7661c1b7535716f211e27be67c542d19d6ebbe8a/.github/workflows/terraform-automation.yml), owner evidence #6; **OWNER_ACTION_REQUIRED:** ссылка на сохранённый Terraform pipeline screenshot |
-| Ansible/Kubernetes | [Ansible](ansible/), [Kubespray profile](ansible/kubespray/), [Kubernetes manifests](kubernetes/); **OWNER_ACTION_REQUIRED:** точный путь защищённого kubeconfig |
-| App/Dockerfile/image | [App repo](https://github.com/myachmen/netology-diploma-app/tree/4cbd4ce0c69a6660d40692c22ede1cca217f515a), [Dockerfile](https://github.com/myachmen/netology-diploma-app/blob/4cbd4ce0c69a6660d40692c22ede1cca217f515a/Dockerfile), immutable OCI reference в разделе3 |
-| Monitoring evidence | [Canonical values](ansible/helm/monitoring-values.yaml), dashboards09/10 и targets12 выше; historical health не равен current uptime |
-| App HTTP80 | **OWNER_ACTION_REQUIRED:** подтверждённая ссылка для проверяющего |
-| Grafana HTTP80 и вход | **OWNER_ACTION_REQUIRED:** подтверждённый URL/Host-resolution и безопасный канал логина; не помещать credentials в README/PNG |
-| Tag CD | Материалы31–33 выше, owner-confirmed #33/v1.0.5 SUCCESS; точный Actions run URL добавлять только после его проверки |
+| Terraform и состояние инфраструктуры | [Служебные ресурсы](terraform/bootstrap/), [основная инфраструктура](terraform/infrastructure/). Нужно подтвердить готовность демонстрации с нуля и соответствие прав IAM принципу минимальных привилегий. |
+| Автоматизация Terraform | [Workflow в main](https://github.com/myachmen/netology-devops-from-zero-homeworks/blob/7661c1b7535716f211e27be67c542d19d6ebbe8a/.github/workflows/terraform-automation.yml), успешный запуск № 6 подтверждён скриншотами. Осталось добавить ссылку на сохранённый скриншот pipeline. |
+| Ansible и Kubernetes | [Ansible](ansible/), [профиль Kubespray](ansible/kubespray/), [манифесты Kubernetes](kubernetes/). Нужно уточнить путь к защищённому kubeconfig. |
+| Приложение и образ | [Репозиторий приложения](https://github.com/myachmen/netology-diploma-app/tree/4cbd4ce0c69a6660d40692c22ede1cca217f515a), [Dockerfile](https://github.com/myachmen/netology-diploma-app/blob/4cbd4ce0c69a6660d40692c22ede1cca217f515a/Dockerfile), OCI-дайджест в разделе 3. |
+| Мониторинг | [Параметры Helm](ansible/helm/monitoring-values.yaml), дашборды и снимки Prometheus/Alertmanager в разделе 4. Это результаты проверок на момент их получения. |
+| Приложение по HTTP, порт 80 | Адрес для проверки нужно подтвердить к согласованной демонстрации; постоянная доступность не обещается. |
+| Grafana по HTTP, порт 80, и вход | Адрес, разрешение имени и безопасный способ передачи данных входа нужно согласовать для демонстрации. Учётные данные в README и PNG не публикуются. |
+| Выпуск приложения по тегу | Снимки workflow и итогов в разделе 5; успешный запуск № 33 для v1.0.5 зафиксирован на скриншотах. Прямую ссылку на запуск можно добавить после проверки его точного адреса. |
 
-Материалы архитектуры: [VM](img/01-yandex-cloud-vms.png), [VPC](img/02-yandex-cloud-vpc.png),
-[ALB](img/03-yandex-cloud-alb.png), [ALB health](img/05-yandex-cloud-alb-health.png).
-Снимки17–21 относятся к историческим CI-попыткам/ошибкам и не являются основной
-витриной финального успеха. Секреты, ключи, kubeconfig и Terraform state не публикуются.
+Материалы архитектуры: [виртуальные машины](img/01-yandex-cloud-vms.png), [VPC](img/02-yandex-cloud-vpc.png), [ALB](img/03-yandex-cloud-alb.png), [проверка ALB](img/05-yandex-cloud-alb-health.png). Снимки 17–21 относятся к прежним попыткам настройки CI/CD и не используются как основные подтверждения финального результата. Секреты, ключи, kubeconfig и состояние Terraform не публикуются.
 
 ---
 
