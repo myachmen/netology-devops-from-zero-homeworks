@@ -27,7 +27,7 @@ def env(mode="plan", digest="a" * 64):
     value = old_env()
     value.pop("TF_PLAN_ACTIVATION")
     value.pop("TF_PLAN_APPROVED_SHA")
-    value.update(GITHUB_EVENT_NAME="push", TF_AUTOMATION_MODE=mode)
+    value.update(GITHUB_EVENT_NAME=("workflow_dispatch" if mode == "plan" else "push"), TF_AUTOMATION_MODE=mode)
     if mode == "apply":
         value.update(TF_APPLY_AUTHORIZATION=runner.APPLY_AUTHORIZATION)
     return value
