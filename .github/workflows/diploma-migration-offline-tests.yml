@@ -1,7 +1,9 @@
 name: Diploma migration offline tests
 on:
   push:
-    branches: [feature/diploma-ci-branch-migration-20261109]
+    branches: [feature/diploma-ci-branch-migration-20261109, diplom-yandexcloud]
+  pull_request:
+    branches: [diplom-yandexcloud]
 permissions:
   contents: read
 jobs:
