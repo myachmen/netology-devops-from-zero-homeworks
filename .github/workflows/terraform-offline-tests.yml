@@ -1,4 +1,4 @@
-name: Diploma migration offline tests
+name: Diploma Terraform offline tests
 on:
   push:
     branches: [feature/diploma-ci-branch-migration-20261109, diplom-yandexcloud]

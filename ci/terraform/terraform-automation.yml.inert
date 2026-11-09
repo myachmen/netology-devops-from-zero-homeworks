@@ -1,6 +1,5 @@
-# Reference copy; .inert is not discovered by Actions.
-# Task184 candidate: feature/PR only until separately approved owner merge.
-# Single-owner gate: protected PR merge + strict machine policy, no independent reviewer.
+# Production activation candidate; inert until a separately authorized cutover.
+# Retire the main workflow and restrict terraform-apply to diploma before activation.
 name: Terraform automation
 on:
   push:
@@ -22,8 +21,6 @@ jobs:
           persist-credentials: false
       - name: Synthetic tests only
         # Test dependency only; no Terraform/backend or credentials in this job.
-        # Installation happens on a FUTURE explicitly activated runner.
-        # No dependencies are installed locally in task179.
         run: |
           python3 -m venv "$RUNNER_TEMP/tf-tests"
           "$RUNNER_TEMP/tf-tests/bin/python" -m pip install --disable-pip-version-check PyYAML==6.0.2
