@@ -27,7 +27,7 @@ def env(mode="plan", digest="a" * 64):
     value = old_env()
     value.pop("TF_PLAN_ACTIVATION")
     value.pop("TF_PLAN_APPROVED_SHA")
-    value.update(GITHUB_EVENT_NAME="push", TF_AUTOMATION_MODE=mode)
+    value.update(GITHUB_EVENT_NAME=("workflow_dispatch" if mode == "plan" else "push"), TF_AUTOMATION_MODE=mode)
     if mode == "apply":
         value.update(TF_APPLY_AUTHORIZATION=runner.APPLY_AUTHORIZATION)
     return value
@@ -188,6 +188,8 @@ class AutomationTests(unittest.TestCase):
         for key, value in (("GITHUB_EVENT_NAME", "pull_request"), ("GITHUB_REF", "refs/heads/feature"), ("GITHUB_RUN_ATTEMPT", "2"), ("GITHUB_REPOSITORY", "fork/repo"), ("TF_AUTOMATION_MODE", "disabled"), ("TF_CLI_ARGS", CANARY), ("AWS_PROFILE", CANARY), ("YC_TOKEN", CANARY)):
             values = env(); values[key] = value
             with self.assertRaises(runner.Stop): runner.gate(values, "plan")
+        values = env(); values["GITHUB_EVENT_NAME"] = "workflow_dispatch"
+        runner.gate(values, "plan")
         values = env("apply"); values["TF_APPLY_AUTHORIZATION"] = "unapproved"
         with self.assertRaises(runner.Stop): runner.gate(values, "apply")
 
@@ -295,8 +297,17 @@ class AutomationTests(unittest.TestCase):
         self.check_activation(yaml.safe_load(text))
         live = ROOT / ".github/workflows/terraform-automation.yml"
         self.assertTrue(live.is_file())
-        self.assertEqual(yaml.safe_load(live.read_text()), yaml.safe_load(text))
-        self.check_activation(yaml.safe_load(live.read_text()))
+        active = yaml.safe_load(live.read_text())
+        self.assertEqual(set(active["jobs"]), {"offline", "plan"})
+        events = active.get("on", active.get(True))
+        self.assertEqual(set(events), {"push", "pull_request", "workflow_dispatch"})
+        self.assertEqual(active["jobs"]["plan"]["needs"], "offline")
+        self.assertEqual(active["jobs"]["plan"]["environment"], "terraform-apply")
+        self.assertIn("github.event_name == 'workflow_dispatch'", active["jobs"]["plan"]["if"])
+        self.assertEqual(active["jobs"]["plan"]["steps"][-1]["env"]["TF_AUTOMATION_MODE"], "plan")
+        self.assertIn("run_automation.py plan", active["jobs"]["plan"]["steps"][-1]["run"])
+        self.assertNotIn("run_automation.py apply", live.read_text())
+        self.assertNotIn("TF_APPLY_AUTHORIZATION", live.read_text())
         self.assertEqual(yaml.safe_load((ROOT / "ci/terraform/terraform-automation.main-snapshot.yml.inert").read_text())["permissions"], yaml.safe_load(text)["permissions"])
         for forbidden in ("workflow_dispatch:", "pull_request_target:", "upload-artifact@", "cache@", "secrets: inherit"):
             self.assertNotIn(forbidden, text)

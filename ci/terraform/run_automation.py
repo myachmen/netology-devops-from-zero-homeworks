@@ -32,7 +32,7 @@ def need(ok, code):
 
 def gate(env, mode):
     need(mode in ("plan", "apply") and env.get("TF_AUTOMATION_MODE") == mode, "ACTIVATION")
-    need(env.get("GITHUB_REPOSITORY") == REPO and env.get("GITHUB_EVENT_NAME") == "push" and env.get("GITHUB_REF") == "refs/heads/diplom-yandexcloud" and env.get("GITHUB_RUN_ATTEMPT") == "1", "TRUST_GATE")
+    need(env.get("GITHUB_REPOSITORY") == REPO and env.get("GITHUB_EVENT_NAME") == ("workflow_dispatch" if mode == "plan" else "push") and env.get("GITHUB_REF") == "refs/heads/diplom-yandexcloud" and env.get("GITHUB_RUN_ATTEMPT") == "1", "TRUST_GATE")
     need(bool(re.fullmatch("[0-9a-f]{40}", env.get("GITHUB_SHA", ""))), "SHA")
     need(all(isinstance(env.get(k), str) and env[k].strip() for k in INPUTS | {"GITHUB_TOKEN"}), "INPUTS")
     need(not any((k.startswith("TF_") and k not in INPUTS | CONTROL) or k.startswith(("AWS_", "YC_")) for k in env), "ENV_OVERRIDE")
