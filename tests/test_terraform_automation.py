@@ -91,7 +91,7 @@ class AutomationTests(unittest.TestCase):
                     (temporary[-1] / "private.tfplan").write_bytes(b"ALTERED")
 
             error, result = None, None
-            with patch.object(runner, "verify_checkout"), patch.object(runner.common, "verify_main", side_effect=api), patch.object(runner.subprocess, "run", side_effect=fake), patch.object(runner, "s3_head", side_effect=lambda *_: next(heads)) as head:
+            with patch.object(runner, "verify_checkout"), patch.object(runner.common, "verify_trusted_branch", side_effect=api), patch.object(runner.subprocess, "run", side_effect=fake), patch.object(runner, "s3_head", side_effect=lambda *_: next(heads)) as head:
                 try:
                     result = runner.execute(values, mode, repo, progress=progress)
                 except Exception as caught:
@@ -180,7 +180,7 @@ class AutomationTests(unittest.TestCase):
             with self.assertRaises(policy.ReviewError): policy.review(plan)
 
     def test_gate_before_any_side_effect(self):
-        with patch.object(runner, "verify_checkout") as checkout, patch.object(runner.common, "verify_main") as network, patch.object(runner.tempfile, "TemporaryDirectory") as temp:
+        with patch.object(runner, "verify_checkout") as checkout, patch.object(runner.common, "verify_trusted_branch") as network, patch.object(runner.tempfile, "TemporaryDirectory") as temp:
             with self.assertRaises(runner.Stop): runner.execute({}, "plan")
         checkout.assert_not_called(); network.assert_not_called(); temp.assert_not_called()
 
@@ -267,7 +267,7 @@ class AutomationTests(unittest.TestCase):
         self.assertEqual(set(data["jobs"]), {"offline", "apply"})
         events = data.get("on", data.get(True))
         self.assertEqual(set(events), {"push", "pull_request"})
-        self.assertEqual(events["push"]["branches"], ["main"])
+        self.assertEqual(events["push"]["branches"], ["diplom-yandexcloud"])
         self.assertNotIn("paths", events["push"])
         self.assertEqual(data["permissions"], {"contents": "read"})
         self.assertFalse(data["concurrency"]["cancel-in-progress"])
@@ -275,7 +275,7 @@ class AutomationTests(unittest.TestCase):
         job = data["jobs"]["apply"]
         self.assertEqual(job["environment"], "terraform-apply")
         self.assertEqual(job["needs"], "offline")
-        for text in ("github.event_name == 'push'", "github.ref == 'refs/heads/main'",
+        for text in ("github.event_name == 'push'", "github.ref == 'refs/heads/diplom-yandexcloud'",
                      "github.repository == 'myachmen/netology-devops-from-zero-homeworks'", "github.run_attempt == 1"):
             self.assertIn(text, job["if"])
         step = job["steps"][-1]
@@ -286,15 +286,15 @@ class AutomationTests(unittest.TestCase):
         self.assertNotIn("setup-terraform", json.dumps(data["jobs"]["offline"]))
         self.assertNotIn("run_automation.py", json.dumps(data["jobs"]["offline"]))
         import re
-        for action in re.findall(r'uses: ([^\s]+)', (ROOT / ".github/workflows/terraform-automation.yml").read_text()):
+        for action in re.findall(r'uses: ([^\s]+)', (ROOT / "ci/terraform/terraform-automation.yml.inert").read_text()):
             self.assertRegex(action, r'^[^@]+@[a-f0-9]{40}$')
 
     def test_one_production_job_and_reference_copy(self):
-        path = ROOT / ".github/workflows/terraform-automation.yml"
+        path = ROOT / "ci/terraform/terraform-automation.yml.inert"
         text = path.read_text()
         self.check_activation(yaml.safe_load(text))
-        self.assertEqual(list((ROOT / ".github/workflows").glob("*.yml")), [path])
-        self.assertEqual(yaml.safe_load((ROOT / "ci/terraform/terraform-automation.yml.inert").read_text()), yaml.safe_load(text))
+        self.assertFalse((ROOT / ".github/workflows/terraform-automation.yml").exists())
+        self.assertEqual(yaml.safe_load((ROOT / "ci/terraform/terraform-automation.main-snapshot.yml.inert").read_text())["permissions"], yaml.safe_load(text)["permissions"])
         for forbidden in ("workflow_dispatch:", "pull_request_target:", "upload-artifact@", "cache@", "secrets: inherit"):
             self.assertNotIn(forbidden, text)
         for mutation in ("duplicate", "environment", "secret", "ref"):

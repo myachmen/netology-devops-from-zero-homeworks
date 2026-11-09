@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Owner-gated main-push automation. Single-owner merge gate; task188 prepares a PR, not live authorization."""
+"""Owner-gated diploma-branch automation. Activation requires a separate approved workflow."""
 import hashlib
 import json
 import os
@@ -32,7 +32,7 @@ def need(ok, code):
 
 def gate(env, mode):
     need(mode in ("plan", "apply") and env.get("TF_AUTOMATION_MODE") == mode, "ACTIVATION")
-    need(env.get("GITHUB_REPOSITORY") == REPO and env.get("GITHUB_EVENT_NAME") == "push" and env.get("GITHUB_REF") == "refs/heads/main" and env.get("GITHUB_RUN_ATTEMPT") == "1", "TRUST_GATE")
+    need(env.get("GITHUB_REPOSITORY") == REPO and env.get("GITHUB_EVENT_NAME") == "push" and env.get("GITHUB_REF") == "refs/heads/diplom-yandexcloud" and env.get("GITHUB_RUN_ATTEMPT") == "1", "TRUST_GATE")
     need(bool(re.fullmatch("[0-9a-f]{40}", env.get("GITHUB_SHA", ""))), "SHA")
     need(all(isinstance(env.get(k), str) and env[k].strip() for k in INPUTS | {"GITHUB_TOKEN"}), "INPUTS")
     need(not any((k.startswith("TF_") and k not in INPUTS | CONTROL) or k.startswith(("AWS_", "YC_")) for k in env), "ENV_OVERRIDE")
@@ -121,7 +121,7 @@ def execute(env, mode, repository=None, head=None, progress=None):
     key = common.provider_key(env["TF_YC_SERVICE_ACCOUNT_KEY_JSON"])
     pub = common.public_key(env["TF_SSH_PUBLIC_KEY"])
     trusted = dict(env, TF_PLAN_APPROVED_SHA=env["GITHUB_SHA"])
-    common.verify_main(trusted)
+    common.verify_trusted_branch(trusted)
     head = s3_head if head is None else head
     status.update({"mode": mode, "source_sha": env["GITHUB_SHA"]})
     old = os.umask(0o077)
@@ -173,7 +173,7 @@ def execute(env, mode, repository=None, head=None, progress=None):
                     code = head(env, "infrastructure/terraform.tfstate.tflock")
                     status["heads"].append({"target": "pre_apply_lock", "http": code})
                     need(code == 404, "LOCK_REQUIRES_REVIEW")
-                    common.verify_main(trusted)
+                    common.verify_trusted_branch(trusted)
                     verify_checkout(repo, env)
                     source_gate(root)
                     current_plan = common.load_private_json(private / "show.out")
@@ -187,7 +187,7 @@ def execute(env, mode, repository=None, head=None, progress=None):
                         status["stage"] = "apply"
                         run("apply", root, child, private, status["commands"])
                         status["status"] = "SAVED_PLAN_APPLY_EXIT_0"
-                common.verify_main(trusted)
+                common.verify_trusted_branch(trusted)
             finally:
                 if touched_backend:
                     # Preserve primary failing stage even if postcheck also fails.

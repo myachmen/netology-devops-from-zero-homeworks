@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Future trusted-main entry point. NOT authorized to execute in task 156.
+"""Future trusted-diploma-branch entry point. NOT authorized to execute in task 156.
 
 No work at import time. Every process is foreground; no retry or rollback.
 This remains unreachable from GitHub Actions until separately approved activation.
@@ -33,7 +33,7 @@ def guard(env):
     if (env.get("TF_CI_ACTIVATION") != ACTIVATION
             or env.get("GITHUB_REPOSITORY") != REPOSITORY
             or env.get("GITHUB_EVENT_NAME") != "push"
-            or env.get("GITHUB_REF") != "refs/heads/main"
+            or env.get("GITHUB_REF") != "refs/heads/diplom-yandexcloud"
             or not re.fullmatch(r"[0-9a-f]{40}", env.get("GITHUB_SHA", ""))):
         raise Stop("TRUST_OR_ACTIVATION_GATE")
     forbidden = ("TF_CLI_ARGS", "TF_LOG", "TF_REATTACH_PROVIDERS")
@@ -50,9 +50,9 @@ def guard(env):
         raise Stop("MISSING_APPROVED_INPUT")
 
 
-def current_main(env):
+def current_trusted_branch(env):
     request = urllib.request.Request(
-        "https://api.github.com/repos/" + REPOSITORY + "/git/ref/heads/main",
+        "https://api.github.com/repos/" + REPOSITORY + "/git/ref/heads/diplom-yandexcloud",
         headers={"Authorization": "Bearer " + env["GITHUB_TOKEN"],
                  "Accept": "application/vnd.github+json", "User-Agent": "terraform-ci-gate"})
     with urllib.request.urlopen(request, timeout=20) as response:
@@ -101,7 +101,7 @@ def execute():
             env.pop(name, None)
         if any(root.glob("*.auto.tfvars*")) or (root / "terraform.tfvars").exists() or (root / "terraform.tfvars.json").exists():
             raise Stop("UNREVIEWED_VARIABLE_FILE")
-        current_main(env)
+        current_trusted_branch(env)
         run(["git", "rev-parse", "HEAD"], repository, env, private / "head", 30)
         if (private / "head").read_text().strip() != env["GITHUB_SHA"]:
             raise Stop("CHECKOUT_SHA_MISMATCH")
@@ -131,7 +131,7 @@ def execute():
         summary = evaluate(plan)
         print(json.dumps(summary, sort_keys=True))
         plan_digest = hashlib.sha256(plan_file.read_bytes()).hexdigest()
-        current_main(env)
+        current_trusted_branch(env)
         if hashlib.sha256(plan_file.read_bytes()).hexdigest() != plan_digest:
             raise Stop("PLAN_FILE_CHANGED")
         run(["terraform", "apply", "-input=false", "-no-color", "-lock=true",

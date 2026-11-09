@@ -29,7 +29,7 @@ def approved_env():
     wire = b"\x00\x00\x00\x0bssh-ed25519\x00\x00\x00\x20" + b"x" * 32
     return {"TF_PLAN_ACTIVATION": runner.APPROVAL_MARKER, "TF_PLAN_APPROVED_SHA": "a" * 40,
         "GITHUB_SHA": "a" * 40, "GITHUB_REPOSITORY": runner.REPOSITORY,
-        "GITHUB_EVENT_NAME": "workflow_dispatch", "GITHUB_REF": "refs/heads/main",
+        "GITHUB_EVENT_NAME": "workflow_dispatch", "GITHUB_REF": "refs/heads/diplom-yandexcloud",
         "GITHUB_RUN_ATTEMPT": "1", "GITHUB_TOKEN": CANARY,
         "TF_YC_SERVICE_ACCOUNT_KEY_JSON": json.dumps({"id": "synthetic-id",
             "service_account_id": "synthetic-sa", "private_key": CANARY}),
@@ -260,7 +260,7 @@ class PlanOnlyTests(unittest.TestCase):
     def test_network_error_is_fixed_category_without_retry(self):
         with patch.object(runner.urllib.request, "urlopen", side_effect=RuntimeError(CANARY)) as network:
             with self.assertRaises(runner.Stop) as error:
-                runner.verify_main(approved_env())
+                runner.verify_trusted_branch(approved_env())
             self.assertEqual(str(error.exception), "MAIN_METADATA")
             self.assertEqual(network.call_count, 1)
 

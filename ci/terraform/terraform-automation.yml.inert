@@ -30,7 +30,7 @@ jobs:
           "$RUNNER_TEMP/tf-tests/bin/python" -B -m unittest discover -s tests -p 'test_terraform_*.py' -v
   apply:
     needs: offline
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'myachmen/netology-devops-from-zero-homeworks' && github.run_attempt == 1 }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/diplom-yandexcloud' && github.repository == 'myachmen/netology-devops-from-zero-homeworks' && github.run_attempt == 1 }}
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     environment: terraform-apply

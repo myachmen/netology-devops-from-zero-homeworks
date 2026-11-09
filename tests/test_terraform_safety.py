@@ -17,7 +17,7 @@ SPEC.loader.exec_module(runner)
 
 def approved_env():
     return {"TF_CI_ACTIVATION": runner.ACTIVATION, "GITHUB_REPOSITORY": runner.REPOSITORY,
-            "GITHUB_EVENT_NAME": "push", "GITHUB_REF": "refs/heads/main", "GITHUB_SHA": "a" * 40,
+            "GITHUB_EVENT_NAME": "push", "GITHUB_REF": "refs/heads/diplom-yandexcloud", "GITHUB_SHA": "a" * 40,
             **{k: "synthetic-only" for k in ("TF_YC_SERVICE_ACCOUNT_KEY_JSON", "TF_S3_ACCESS_KEY_ID",
                "TF_S3_SECRET_ACCESS_KEY", "TF_VAR_cloud_id", "TF_VAR_folder_id", "TF_VAR_admin_cidr",
                "TF_SSH_PUBLIC_KEY", "GITHUB_TOKEN")}}
@@ -74,11 +74,11 @@ class SafetyTests(unittest.TestCase):
             process.assert_not_called()
             network.assert_not_called()
 
-    def test_current_main_mismatch_stops_without_retry(self):
+    def test_current_trusted_branch_mismatch_stops_without_retry(self):
         with patch.object(runner.urllib.request, "urlopen") as network:
             network.return_value.__enter__.return_value.read.return_value = b'{"object":{"sha":"stale"}}'
             with self.assertRaises(runner.Stop):
-                runner.current_main(approved_env())
+                runner.current_trusted_branch(approved_env())
             self.assertEqual(network.call_count, 1)
 
     def test_exception_details_are_never_printed(self):

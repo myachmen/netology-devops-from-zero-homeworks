@@ -46,7 +46,7 @@ def gate(env):
     if (env.get("TF_PLAN_ACTIVATION") != APPROVAL_MARKER
             or env.get("GITHUB_REPOSITORY") != REPOSITORY
             or env.get("GITHUB_EVENT_NAME") != "workflow_dispatch"
-            or env.get("GITHUB_REF") != "refs/heads/main"
+            or env.get("GITHUB_REF") != "refs/heads/diplom-yandexcloud"
             or env.get("GITHUB_RUN_ATTEMPT") != "1"
             or not re.fullmatch(r"[0-9a-f]{40}", env.get("GITHUB_SHA", ""))
             or env.get("GITHUB_SHA") != env.get("TF_PLAN_APPROVED_SHA")):
@@ -97,9 +97,9 @@ def provider_key(text):
         raise Stop("PROVIDER_KEY") from None
 
 
-def verify_main(env):
+def verify_trusted_branch(env):
     request = urllib.request.Request(
-        "https://api.github.com/repos/" + REPOSITORY + "/git/ref/heads/main",
+        "https://api.github.com/repos/" + REPOSITORY + "/git/ref/heads/diplom-yandexcloud",
         headers={"Authorization": "Bearer " + env["GITHUB_TOKEN"],
                  "Accept": "application/vnd.github+json", "User-Agent": "terraform-plan-only"})
     try:
@@ -159,7 +159,7 @@ def execute(env=None, repository=None):
     # No live key use here until explicit future authorization and activation.
     key = provider_key(env["TF_YC_SERVICE_ACCOUNT_KEY_JSON"])
     pub = public_key(env["TF_SSH_PUBLIC_KEY"])
-    verify_main(env)
+    verify_trusted_branch(env)
     old_umask = os.umask(0o077)
     try:
         with tempfile.TemporaryDirectory(prefix="terraform-plan-only-") as directory:
@@ -193,7 +193,7 @@ def execute(env=None, repository=None):
                 raise Stop("POLICY_DENIED", stage="policy") from None
             if plan_exit != 0:
                 raise Stop("NON_NOOP_EXIT")
-            verify_main(env)
+            verify_trusted_branch(env)
             print(json.dumps({"status": "PLAN_ONLY_VERIFIED_NOOP", "managed_resources": summary["managed_resources"]}, sort_keys=True))
     finally:
         os.umask(old_umask)
