@@ -293,7 +293,10 @@ class AutomationTests(unittest.TestCase):
         path = ROOT / "ci/terraform/terraform-automation.yml.inert"
         text = path.read_text()
         self.check_activation(yaml.safe_load(text))
-        self.assertFalse((ROOT / ".github/workflows/terraform-automation.yml").exists())
+        live = ROOT / ".github/workflows/terraform-automation.yml"
+        self.assertTrue(live.is_file())
+        self.assertEqual(yaml.safe_load(live.read_text()), yaml.safe_load(text))
+        self.check_activation(yaml.safe_load(live.read_text()))
         self.assertEqual(yaml.safe_load((ROOT / "ci/terraform/terraform-automation.main-snapshot.yml.inert").read_text())["permissions"], yaml.safe_load(text)["permissions"])
         for forbidden in ("workflow_dispatch:", "pull_request_target:", "upload-artifact@", "cache@", "secrets: inherit"):
             self.assertNotIn(forbidden, text)
