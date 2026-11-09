@@ -4,9 +4,9 @@
 name: Terraform automation
 on:
   push:
-    branches: [main]
+    branches: [diplom-yandexcloud]
   pull_request:
-    branches: [main]
+    branches: [diplom-yandexcloud]
 permissions:
   contents: read
 concurrency:
