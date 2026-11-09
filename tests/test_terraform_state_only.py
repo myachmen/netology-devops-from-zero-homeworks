@@ -139,7 +139,7 @@ class StateOnlyTests(unittest.TestCase):
                            ("GITHUB_REPOSITORY", "fork/repo"), ("GITHUB_RUN_ATTEMPT", "2"),
                            ("TF_APPLY_AUTHORIZATION", "missing")):
             values = env("apply"); values[key] = value
-            with patch.object(runner, "verify_checkout") as checkout, patch.object(runner.common, "verify_main") as network:
+            with patch.object(runner, "verify_checkout") as checkout, patch.object(runner.common, "verify_trusted_branch") as network:
                 with self.assertRaises(runner.Stop): runner.execute(values, "apply")
                 checkout.assert_not_called(); network.assert_not_called()
 

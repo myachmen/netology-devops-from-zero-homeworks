@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   plan:
-    if: ${{ false && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.repository == 'myachmen/netology-devops-from-zero-homeworks' && github.run_attempt == 1 }}
+    if: ${{ false && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/diplom-yandexcloud' && github.repository == 'myachmen/netology-devops-from-zero-homeworks' && github.run_attempt == 1 }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:

@@ -36,7 +36,7 @@ jobs:
           terraform init -backend=false -input=false -lockfile=readonly -no-color
           terraform validate -no-color
   infrastructure:
-    if: ${{ false && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'myachmen/netology-devops-from-zero-homeworks' }}
+    if: ${{ false && github.event_name == 'push' && github.ref == 'refs/heads/diplom-yandexcloud' && github.repository == 'myachmen/netology-devops-from-zero-homeworks' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
