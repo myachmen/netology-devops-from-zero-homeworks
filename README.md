@@ -138,8 +138,7 @@ Alertmanager принимал Watchdog. На снимке указан полу�
 
 ### Автоматизация Terraform
 
-Выбран вариант автоматического применения Terraform через CI/CD. Workflow расположен **в другой ветке — main**:
-[terraform-automation.yml](https://github.com/myachmen/netology-devops-from-zero-homeworks/blob/7661c1b7535716f211e27be67c542d19d6ebbe8a/.github/workflows/terraform-automation.yml).
+Выбран вариант автоматического применения Terraform через CI/CD. **Исторический успешный запуск** выполнен из ветки `main` ([исходный workflow](https://github.com/myachmen/netology-devops-from-zero-homeworks/blob/7661c1b7535716f211e27be67c542d19d6ebbe8a/.github/workflows/terraform-automation.yml)). Перенос в `diplom-yandexcloud` подготовлен, но **производственный workflow ещё не включён**: [кандидат](ci/terraform/terraform-automation.yml.inert), [план переключения](docs/TERRAFORM_BRANCH_MIGRATION.md), [офлайн-проверки](.github/workflows/terraform-offline-tests.yml).
 
 Сохранённые скриншоты подтверждают успешный запуск **Terraform automation № 6**: сохранённый план применён без изменения 14 управляемых ресурсов, изменено одно выходное значение. Это подтверждает работу автоматизации, но не демонстрирует создание всех ресурсов с нуля. Для сдачи осталось добавить проверенную ссылку на сохранённый скриншот именно Terraform pipeline. Новый запуск Terraform ради оформления документа не требуется.
 
@@ -176,7 +175,7 @@ Workflow проверяет соответствие коммита, тега, �
 | Материал | Ссылка и сведения, которые нужно дополнить |
 |---|---|
 | Terraform и состояние инфраструктуры | [Служебные ресурсы](terraform/bootstrap/), [основная инфраструктура](terraform/infrastructure/). Нужно подтвердить готовность демонстрации с нуля и соответствие прав IAM принципу минимальных привилегий. |
-| Автоматизация Terraform | [Workflow в main](https://github.com/myachmen/netology-devops-from-zero-homeworks/blob/7661c1b7535716f211e27be67c542d19d6ebbe8a/.github/workflows/terraform-automation.yml), успешный запуск № 6 подтверждён скриншотами. Осталось добавить ссылку на сохранённый скриншот pipeline. |
+| Автоматизация Terraform | [Исторический workflow в main](https://github.com/myachmen/netology-devops-from-zero-homeworks/blob/7661c1b7535716f211e27be67c542d19d6ebbe8a/.github/workflows/terraform-automation.yml), [неактивный кандидат](ci/terraform/terraform-automation.yml.inert), успешный запуск № 6 подтверждён скриншотами. Осталось добавить ссылку на сохранённый скриншот pipeline. |
 | Ansible и Kubernetes | [Ansible](ansible/), [профиль Kubespray](ansible/kubespray/), [манифесты Kubernetes](kubernetes/). Нужно уточнить путь к защищённому kubeconfig. |
 | Приложение и образ | [Репозиторий приложения](https://github.com/myachmen/netology-diploma-app/tree/4cbd4ce0c69a6660d40692c22ede1cca217f515a), [Dockerfile](https://github.com/myachmen/netology-diploma-app/blob/4cbd4ce0c69a6660d40692c22ede1cca217f515a/Dockerfile), OCI-дайджест в разделе 3. |
 | Мониторинг | [Параметры Helm](ansible/helm/monitoring-values.yaml), дашборды и снимки Prometheus/Alertmanager в разделе 4. Это результаты проверок на момент их получения. |
