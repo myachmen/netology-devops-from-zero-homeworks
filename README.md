@@ -144,5 +144,5 @@
 
 ## Модуль «Итоговый модуль профессии DevOps-инженер с нуля»
 - [Дипломный проект в Yandex Cloud](https://github.com/myachmen/netology-devops-from-zero-homeworks/tree/diplom-yandexcloud)
-- [Исходное задание дипломного проекта](https://github.com/netology-code/fops-sysadm-diplom/blob/main/README.md)
+- [Исходное задание дипломного проекта](https://github.com/netology-code/devops-diplom-yandexcloud)
 - Сертификат: *PDF пока не добавлен в репозиторий*.
